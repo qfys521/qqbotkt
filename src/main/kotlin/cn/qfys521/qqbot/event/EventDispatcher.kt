@@ -27,6 +27,7 @@ class EventDispatcher(
 
     private val readyListeners = CopyOnWriteArrayList<suspend (ReadyEvent) -> Unit>()
     private val resumedListeners = CopyOnWriteArrayList<suspend (ResumedEvent) -> Unit>()
+    private val groupMessageListeners = CopyOnWriteArrayList<suspend (GroupMessageEvent) -> Unit>()
     private val groupAtMessageListeners = CopyOnWriteArrayList<suspend (GroupAtMessageEvent) -> Unit>()
     private val c2cMessageListeners = CopyOnWriteArrayList<suspend (C2CMessageEvent) -> Unit>()
     private val guildAtMessageListeners = CopyOnWriteArrayList<suspend (GuildAtMessageEvent) -> Unit>()
@@ -60,6 +61,14 @@ class EventDispatcher(
      */
     fun onResumed(listener: suspend (ResumedEvent) -> Unit) {
         resumedListeners.add(listener)
+    }
+    /**
+     * 注册面向 QQ 群组里他人发信（包括无 @ 消息） (`GROUP_MESSAGE_CREATE`) 的专属回调。
+     *
+     * @param listener 协程监听函数体。
+     */
+    fun onGroupMessage(listener: suspend (GroupMessageEvent) -> Unit) {
+        groupMessageListeners.add(listener)
     }
 
     /**
@@ -207,6 +216,7 @@ class EventDispatcher(
                 when (event) {
                     is ReadyEvent -> readyListeners.forEach { safeInvoke { it(event) } }
                     is ResumedEvent -> resumedListeners.forEach { safeInvoke { it(event) } }
+                    is GroupMessageEvent -> groupMessageListeners.forEach { safeInvoke { it(event) } }
                     is GroupAtMessageEvent -> groupAtMessageListeners.forEach { safeInvoke { it(event) } }
                     is C2CMessageEvent -> c2cMessageListeners.forEach { safeInvoke { it(event) } }
                     is GuildAtMessageEvent -> guildAtMessageListeners.forEach { safeInvoke { it(event) } }

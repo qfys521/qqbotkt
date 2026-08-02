@@ -60,6 +60,62 @@ class ResumedEvent(
 // ==================== 消息互动类事件 ====================
 
 /**
+ * 在 QQ 群组会话中普通的发信（不一定是 @ 机器人）所引起的 (`GROUP_MESSAGE_CREATE`) 群聊事件。
+ *
+ * @property message 包装好此条包含发言者、内容、群组标示与时间的完整 [Message] 实体对象。
+ */
+class GroupMessageEvent(
+    val message: Message,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent() {
+
+    /** 发信源头群成员的用户显示昵称快捷属性。 */
+    val authorName: String get() = message.author.username
+    /** 发信人具体标识 openId。 */
+    val authorId: String get() = message.author.openId
+    /** 所处群组的识别 ID。 */
+    val groupOpenId: String get() = message.groupOpenId ?: ""
+
+    /**
+     * 直接在当前群内针对此事件以简明普通文字做出应答。
+     *
+     * @param content 你想要发送展示给成员的文字。
+     * @param msgSeq 业务防重的序号代码，默认自定 `1`。
+     */
+    suspend fun reply(content: String, msgSeq: Int = 1): MessageResult {
+        return api.sendGroupMessage(
+            groupOpenId = groupOpenId,
+            content = content,
+            msgId = message.id,
+            msgSeq = msgSeq
+        )
+    }
+
+    /**
+     * 以高度定制的声明式语法在当前群内对事件做出响应。
+     *
+     * @param block 声明式构建发送配置 [SendMessageRequestBuilder] 作用域函数。
+     */
+    suspend fun reply(block: SendMessageRequestBuilder.() -> Unit): MessageResult {
+        val customRequest = message(block).copy(
+            msgId = message.id
+        )
+        return api.sendGroupMessage(groupOpenId = groupOpenId, request = customRequest)
+    }
+
+    /**
+     * 撤回本条触发事件的原始群消息（需要拥有管理员撤回权限）。
+     */
+    suspend fun delete() {
+        if (groupOpenId.isNotBlank() && message.id.isNotBlank()) {
+            api.deleteGroupMessage(groupOpenId, message.id)
+        }
+    }
+}
+
+/**
  * 在 QQ 群组会话中由于他人对机器人 @ 并发信所引起的 (`GROUP_AT_MESSAGE_CREATE`) 群聊事件。
  *
  * @property message 包装好此条包含发言者、内容、群组标示与时间的完整 [Message] 实体对象。

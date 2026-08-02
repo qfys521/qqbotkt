@@ -92,6 +92,14 @@ class QQBotBuilderScope {
     fun onResumed(listener: suspend (ResumedEvent) -> Unit) {
         eventListeners.add { it.onResumed(listener) }
     }
+    /**
+     * 绑定 QQ 群聊中普通发话（包括无 @ 消息） (`GROUP_MESSAGE_CREATE`) 的响应监听回调。
+     *
+     * @param listener 自定监听协程执行体。
+     */
+    fun onGroupMessage(listener: suspend (GroupMessageEvent) -> Unit) {
+        eventListeners.add { it.onGroupMessage(listener) }
+    }
 
     /**
      * 绑定 QQ 群聊中他人 @ 机器人发话 (`GROUP_AT_MESSAGE_CREATE`) 的响应监听回调。

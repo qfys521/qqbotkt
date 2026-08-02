@@ -318,6 +318,11 @@ class QQBotGateway(
                     eventDispatcher.dispatch(ResumedEvent(payload.id, payload.s?.toString(), rawJson))
                 }
 
+                "GROUP_MESSAGE_CREATE" -> {
+                    val message = payload.d?.let { json.decodeFromJsonElement<Message>(it) } ?: return
+                    eventDispatcher.dispatch(GroupMessageEvent(message, payload.id, payload.s?.toString(), rawJson))
+                }
+
                 "GROUP_AT_MESSAGE_CREATE" -> {
                     val message = payload.d?.let { json.decodeFromJsonElement<Message>(it) } ?: return
                     eventDispatcher.dispatch(GroupAtMessageEvent(message, payload.id, payload.s?.toString(), rawJson))
