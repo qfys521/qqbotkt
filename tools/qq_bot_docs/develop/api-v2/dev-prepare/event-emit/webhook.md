@@ -18,7 +18,7 @@ QQ 机器人开放平台支持通过使用 HTTP 接口接收事件。开发者�
 
 开发者需要提供一个 HTTPS 回调地址。并选定监听的事件类型。开放平台会将事件通过回调的方式推送给机器人。
 
-![event_subscription](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/event_subscription.fa237046.png)
+![event_subscription](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/webhook_new.b24ed4d6.png)
 
 配置回调地址后，开放平台会对回调地址进行验证：
 
@@ -88,52 +88,52 @@ func handleValidation(rw http.ResponseWriter, r *http.Request, botSecret string)
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
-6  
-7  
-8  
-9  
-10  
-11  
-12  
-13  
-14  
-15  
-16  
-17  
-18  
-19  
-20  
-21  
-22  
-23  
-24  
-25  
-26  
-27  
-28  
-29  
-30  
-31  
-32  
-33  
-34  
-35  
-36  
-37  
-38  
-39  
-40  
-41  
-42  
-43  
-44  
-45  
-46  
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
 47
 
 例如机器人账号
@@ -143,7 +143,7 @@ appid: 11111111
 secret: DG5g3B4j9X2KOErG
 ```
 
-1  
+1
 2
 
 回调验证请求：
@@ -153,7 +153,7 @@ headers: User-Agent:[QQBot-Callback] X-Bot-Appid:[11111111]
 body: {"d":{"plain_token":"Arq0D5A61EgUu4OxUvOp","event_ts":"1725442341"},"op":13},
 ```
 
-1  
+1
 2
 
 机器人应返回：

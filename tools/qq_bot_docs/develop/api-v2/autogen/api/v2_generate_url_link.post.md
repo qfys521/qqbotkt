@@ -24,7 +24,7 @@
 
 | 名称 | 类型 | 必填 | 描述 |
 | --- | --- | --- | --- |
-| url\_link | string | 否 | 需要跳转的 URL |
+| callback\_data | string | 否 | 回传给机器人后台的数据 |
 
 ### 请求示例
 
@@ -37,9 +37,9 @@ POST /v2/generate_url_link
 }
 ```
 
-1  
-2  
-3  
+1
+2
+3
 4
 
 ## 响应
@@ -48,7 +48,13 @@ POST /v2/generate_url_link
 
 | 名称 | 类型 | 描述 |
 | --- | --- | --- |
-| url\_link | string | 生成的分享链接 |
+| data | [Data](#schema-data) |  |
+
+**Data**
+
+| 名称 | 类型 | 描述 |
+| --- | --- | --- |
+| url | string | 生成的分享链接 |
 
 ## 响应示例
 
@@ -56,13 +62,17 @@ POST /v2/generate_url_link
 
 ```
 {
-  "url_link": "https://qun.qq.com/qunpro/robot/qunshare?robot_appid=1234567890&robot_uin=12345678&data=xxx"
+  "data": {
+    "url": "https://qun.qq.com/qunpro/robot/qunshare?robot_appid=1234567890&robot_uin=12345678&data=xxx"
+  }
 }
 ```
 
-1  
-2  
+1
+2
 3
+4
+5
 
 ### 错误码
 

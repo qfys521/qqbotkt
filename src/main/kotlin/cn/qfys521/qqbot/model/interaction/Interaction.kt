@@ -54,7 +54,7 @@ data class InteractionData(
 /**
  * 回执应答客户端收到的 interaction 互动请求。
  *
- * 对应 HTTP 接口：`PUT /v2/interactions/{interaction_id}`
+ * 对应 HTTP 接口：`PUT /interactions/{interaction_id}`
  *
  * @property code 返回处理状态吗，默认为 `0` (成功应答)；如存在逻辑禁止或失败可以指定其它状态码。
  * @property isWakeup 选填，是否把此处回调视为唤醒会话的动作并获得主动发送下一条提示消息许可。

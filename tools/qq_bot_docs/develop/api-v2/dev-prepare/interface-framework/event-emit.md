@@ -24,12 +24,12 @@
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
-6  
+1
+2
+3
+4
+5
+6
 7
 
 | 字段 | 描述 |
@@ -80,7 +80,7 @@ QQ机器人开放平台支持通过使用HTTP接口接收事件。开发者可�
 
 开发者需要提供一个HTTPS回调地址。并选定监听的事件类型。开放平台会将事件通过回调的方式推送给机器人。
 
-![event_subscription](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/event_subscription.fa237046.png)
+![event_subscription](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/webhook_new.b24ed4d6.png)
 
 配置回调地址后，开放平台会对回调地址进行验证：
 
@@ -150,53 +150,53 @@ func handleValidation(rw http.ResponseWriter, r *http.Request, botSecret string)
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
-6  
-7  
-8  
-9  
-10  
-11  
-12  
-13  
-14  
-15  
-16  
-17  
-18  
-19  
-20  
-21  
-22  
-23  
-24  
-25  
-26  
-27  
-28  
-29  
-30  
-31  
-32  
-33  
-34  
-35  
-36  
-37  
-38  
-39  
-40  
-41  
-42  
-43  
-44  
-45  
-46  
-47  
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
 48
 
 例如机器人账号
@@ -206,7 +206,7 @@ appid: 11111111
 secret: DG5g3B4j9X2KOErG
 ```
 
-1  
+1
 2
 
 回调验证请求：
@@ -216,7 +216,7 @@ headers: User-Agent:[QQBot-Callback] X-Bot-Appid:[11111111]
 body: {"d":{"plain_token":"Arq0D5A61EgUu4OxUvOp","event_ts":"1725442341"},"op":13},
 ```
 
-1  
+1
 2
 
 机器人应返回：
@@ -236,7 +236,7 @@ body: {"plain_token": "Arq0D5A61EgUu4OxUvOp","signature": "87befc99c42c651b3aac0
 会得到一个类似下面这样的地址：
 
 ```
-wss://api.sgroup.qq.com/websocket/
+wss://api.bot.qq.com/websocket/
 ```
 
 1
@@ -252,11 +252,11 @@ wss://api.sgroup.qq.com/websocket/
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
+1
+2
+3
+4
+5
 6
 
 ### 登录鉴权获得 Session
@@ -281,19 +281,19 @@ wss://api.sgroup.qq.com/websocket/
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
-6  
-7  
-8  
-9  
-10  
-11  
-12  
-13  
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
 14
 
 | **字段** | **描述** |
@@ -323,20 +323,20 @@ wss://api.sgroup.qq.com/websocket/
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
-6  
-7  
-8  
-9  
-10  
-11  
-12  
-13  
-14  
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
 15
 
 ### 发送心跳 Ack
@@ -350,9 +350,9 @@ wss://api.sgroup.qq.com/websocket/
 }
 ```
 
-1  
-2  
-3  
+1
+2
+3
 4
 
 心跳发送成功之后会收到 [OpCode 11 Heartbeat ACK](/wiki/develop/api-v2/dev-prepare/interface-framework/opcode.html) 消息， `payload` 如下：
@@ -363,8 +363,8 @@ wss://api.sgroup.qq.com/websocket/
 }
 ```
 
-1  
-2  
+1
+2
 3
 
 ### 恢复登录态 Session
@@ -382,13 +382,13 @@ wss://api.sgroup.qq.com/websocket/
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
-6  
-7  
+1
+2
+3
+4
+5
+6
+7
 8
 
 其中 `seq` 指的是在接收事件时候的 `s` 字段，我们推荐开发者在处理过事件之后记录下 `s` 这样可以在 `resume` 的时候传递给 `websocket`， `websocket` 会自动补发这个 seq 之后的事件。
@@ -404,11 +404,11 @@ wss://api.sgroup.qq.com/websocket/
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
+1
+2
+3
+4
+5
 6
 
 ### 事件订阅Intents
@@ -486,69 +486,69 @@ PUBLIC_GUILD_MESSAGES (1 << 30) // 消息事件，此为公域的消息事件
   - PUBLIC_MESSAGE_DELETE   // 当频道的消息被删除时
 ```
 
-1  
-2  
-3  
-4  
-5  
-6  
-7  
-8  
-9  
-10  
-11  
-12  
-13  
-14  
-15  
-16  
-17  
-18  
-19  
-20  
-21  
-22  
-23  
-24  
-25  
-26  
-27  
-28  
-29  
-30  
-31  
-32  
-33  
-34  
-35  
-36  
-37  
-38  
-39  
-40  
-41  
-42  
-43  
-44  
-45  
-46  
-47  
-48  
-49  
-50  
-51  
-52  
-53  
-54  
-55  
-56  
-57  
-58  
-59  
-60  
-61  
-62  
-63  
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
 64
 
 #### 举例
@@ -575,7 +575,7 @@ PUBLIC_GUILD_MESSAGES (1 << 30) // 消息事件，此为公域的消息事件
 
 ```
 {
-  "url": "wss://sandbox.api.sgroup.qq.com/websocket",
+  "url": "wss://api.bot.qq.com/websocket",
   "shards": 1,
   "session_start_limit": {
     "total": 1000,
@@ -586,15 +586,15 @@ PUBLIC_GUILD_MESSAGES (1 << 30) // 消息事件，此为公域的消息事件
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
-6  
-7  
-8  
-9  
+1
+2
+3
+4
+5
+6
+7
+8
+9
 10
 
 #### 分片规则

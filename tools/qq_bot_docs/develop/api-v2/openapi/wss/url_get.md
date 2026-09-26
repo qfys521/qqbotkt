@@ -40,10 +40,10 @@ application/json
 
 ```
 {
-  "url": "wss://api.sgroup.qq.com/websocket/"
+  "url": "wss://api.bot.qq.com/websocket/"
 }
 ```
 
-1  
-2  
+1
+2
 3

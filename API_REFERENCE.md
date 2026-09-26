@@ -1,6 +1,6 @@
 # QQBotKt API Reference (全量 API 开发速查手册)
 
-> 本参考手册整理自 SDK 内核源码 ([`QQBotApi.kt`](file:///E:/Code/qqbotkt/src/main/kotlin/cn/qfys521/qqbot/http/QQBotApi.kt)) 与官方文档 `tools/qq_bot_docs/develop/api-v2/`，提供**全部 OpenAPI v2 接口、WebSocket 网关事件、DSL 语法规范及数据字典**，是基于 `QQBotKt` 进行机器人开发的标准 API 文档。
+> 本参考手册整理自 SDK 内核源码 ([`QQBotApi.kt`](src/main/kotlin/cn/qfys521/qqbot/http/QQBotApi.kt)) 与官方文档 `tools/qq_bot_docs/develop/api-v2/`，提供**全部 OpenAPI v2 接口、WebSocket 网关事件、DSL 语法规范及数据字典**，是基于 `QQBotKt` 进行机器人开发的标准 API 文档。
 
 ---
 
@@ -10,8 +10,9 @@
    - [1.2 单聊私信会话 (C2C Messages & Media)](#12-单聊私信会话-c2c-messages--media)
    - [1.3 QQ 群聊会话 (Group Messages & Media)](#13-qq-群聊会话-group-messages--media)
    - [1.4 频道与子频道管理 (Guild & Channel API)](#14-频道与子频道管理-guild--channel-api)
-   - [1.5 交互回调应答 (Interaction Response)](#15-交互回调应答-interaction-response)
-   - [1.6 WebSocket 网关寻址 (Gateway URL)](#16-websocket-网关寻址-gateway-url)
+   - [1.5 群管理与扩展接口 (Management API)](#15-群管理与扩展接口-management-api)
+   - [1.6 交互回调应答 (Interaction Response)](#16-交互回调应答-interaction-response)
+   - [1.7 WebSocket 网关寻址 (Gateway URL)](#17-websocket-网关寻址-gateway-url)
 2. [WebSocket 网关事件体系 (BotEvent & DSL 侦听器)](#2-websocket-网关事件体系-botevent--dsl-侦听器)
 3. [高阶声明式 DSL 规范 (Builder DSL)](#3-高阶声明式-dsl-规范-builder-dsl)
 4. [核心数据模型词典 (Model Dictionary)](#4-核心数据模型词典-model-dictionary)
@@ -65,7 +66,7 @@ bot.api.sendC2CMessage(
 | `sendGroupMessage(groupOpenId, content, ...)`| `POST /v2/groups/{id}/messages` | 重载便携版：快捷向群聊投放文本消息 | `content`: 文字文本 | `MessageResult` |
 | `deleteGroupMessage(groupOpenId, messageId)`| `DELETE /v2/groups/{id}/messages/{msg_id}`| 从群聊窗口中主动撤回既往发送消息 | `messageId`: 待撤回消息 ID | `Unit` |
 | `getGroupInfo(groupOpenId)` | `GET /v2/groups/{id}/info` | 探查指定群组的基本展示元数据 | `groupOpenId`: 群聊 ID | `JsonElement` |
-| `getGroupBotState(groupOpenId)` | `GET /v2/groups/{id}/bot-state` | 查验自己在群内所属的管理状态和特权 | `groupOpenId`: 群聊 ID | `GroupBotState` |
+| `getGroupBotState(groupOpenId)` | `GET /v2/groups/{id}/bot_state` | 查验自己在群内所属的管理状态和特权 | `groupOpenId`: 群聊 ID | `GroupBotState` |
 | `uploadGroupMedia(groupOpenId, request)` | `POST /v2/groups/{id}/files` | **群富媒体转存**：把群媒体文件交由服务器托管 | `request`: 文件类型及资源下载 URL | `UploadMediaResponse` |
 
 ---
@@ -82,14 +83,33 @@ bot.api.sendC2CMessage(
 
 ---
 
-### 1.5 交互回调应答 (Interaction Response)
-| SDK 方法名 | 对应 HTTP 方法与相对路径 | 业务功能 | 参数说明 |
-| :--- | :--- | :--- | :--- |
-| `putInteractionResponse(interactionId, request)` | `PUT /v2/interactions/{id}` | 在收到内嵌键盘按钮回调点击后进行回显确认 | `request`: `InteractionResponseRequest(code=0)` |
+### 1.5 群管理与扩展接口 (Management API)
+
+| SDK 方法名 | 对应 HTTP 方法与相对路径 | 说明 |
+| :--- | :--- | :--- |
+| `generateShareLink(request)` | `POST /v2/generate_url_link` | 生成机器人分享链接 |
+| `getGroupMembers(...)` / `getGroupMember(...)` | `GET /v2/groups/{group_openid}/members...` | 分页查询群成员 |
+| `getGroupBlacklist(...)` / `updateGroupBlacklist(...)` | `GET/POST /v2/groups/{group_openid}/member_blacklist` | 查询及维护群黑名单 |
+| `getRestrictChatSetting(...)` / `updateRestrictChatSetting(...)` | `GET/POST /v2/groups/{group_openid}/restrict_chat_setting` | 查询及维护禁言状态 |
+| `getJoinRequests(...)` / `approveJoinRequest(...)` | `GET/POST /v2/groups/{group_openid}/join_request_list...` | 查询及审批入群申请 |
+| `batchRemoveMembers(...)` | `POST /v2/groups/{group_openid}/batch_remove_members` | 批量移除群成员 |
+| `get/create/update/deleteJoinApprovalStrategy(...)` | `/v2/groups/join_approval_strategy...` | 管理自动审批策略 |
+| `getMenu()` / `updateMenu(...)` | `GET/PUT /v2/menu` | 管理全局自定义菜单 |
+| `getPanels(...)` / `createPanel(...)` / `updatePanel(...)` | `/v2/panels...` | 管理指令面板 |
+| `prepare*Upload(...)` / `finish*Upload(...)` | `/v2/{groups,users}/{id}/upload_*` | 分片上传准备与完成回调 |
+
+成员管理、审批策略、菜单和面板接口受平台灰度、机器人管理员身份或白名单权限限制；分片上传返回的预签名 URL 应由调用方直接 PUT 文件分片，不能附带 Bot Authorization。
 
 ---
 
-### 1.6 WebSocket 网关寻址 (Gateway URL)
+### 1.6 交互回调应答 (Interaction Response)
+| SDK 方法名 | 对应 HTTP 方法与相对路径 | 业务功能 | 参数说明 |
+| :--- | :--- | :--- | :--- |
+| `putInteractionResponse(interactionId, request)` | `PUT /interactions/{id}` | 在收到内嵌键盘按钮回调点击后进行回显确认 | `request`: `InteractionResponseRequest(code=0)` |
+
+---
+
+### 1.7 WebSocket 网关寻址 (Gateway URL)
 | SDK 方法名 | 对应 HTTP 方法与相对路径 | 业务功能 | 返回结果类型 |
 | :--- | :--- | :--- | :--- |
 | `getWssUrl()` | `GET /gateway` | 获得标准通用版 WSS 连接地址 | `WssUrlResponse` |
@@ -184,7 +204,7 @@ val request = message {
 
 ## 5. 错误码与异常继承关系 (Exceptions & Error Codes)
 
-SDK 在发生网络异常、业务鉴权拒绝或频率控管时将统一抛出下列派生自 [`QQBotException`](file:///E:/Code/qqbotkt/src/main/kotlin/cn/qfys521/qqbot/exception/QQBotException.kt) 的异常对象：
+SDK 在发生网络异常、业务鉴权拒绝或频率控管时将统一抛出下列派生自 [`QQBotException`](src/main/kotlin/cn/qfys521/qqbot/exception/QQBotException.kt) 的异常对象：
 
 ```
 RuntimeException

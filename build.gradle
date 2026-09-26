@@ -19,7 +19,7 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0'
 
     // Ktor Client for HTTP & WebSocket
-    def ktorVersion = '3.0.3'
+    def ktorVersion = '3.5.1'
     implementation "io.ktor:ktor-client-core:$ktorVersion"
     implementation "io.ktor:ktor-client-okhttp:$ktorVersion"
     implementation "io.ktor:ktor-client-content-negotiation:$ktorVersion"
@@ -29,11 +29,12 @@ dependencies {
 
     // Logging
     implementation 'org.slf4j:slf4j-api:2.0.16'
-    testImplementation 'ch.qos.logback:logback-classic:1.5.16'
+    testImplementation 'ch.qos.logback:logback-classic:1.5.38'
 
     // Testing
     testImplementation 'org.jetbrains.kotlin:kotlin-test'
     testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1'
+    testImplementation "io.ktor:ktor-client-mock:$ktorVersion"
 }
 
 kotlin {
@@ -48,10 +49,12 @@ test {
     useJUnitPlatform()
 }
 
+def javaComponent = components.java
+
 publishing {
     publications {
-        mavenJava(MavenPublication) {
-            from components.java
+        create('mavenJava', MavenPublication) {
+            from javaComponent
             groupId = 'cn.qfys521'
             artifactId = 'qqbotkt'
             version = '1.0.0'
@@ -64,7 +67,7 @@ publishing {
                 licenses {
                     license {
                         name = 'The Apache License, Version 2.0'
-                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
                     }
                 }
                 developers {

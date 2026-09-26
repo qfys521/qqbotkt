@@ -29,11 +29,11 @@ wss://api.bot.qq.com/websocket/
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
+1
+2
+3
+4
+5
 6
 
 ## 登录鉴权获得 Session
@@ -58,18 +58,18 @@ wss://api.bot.qq.com/websocket/
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
-6  
-7  
-8  
-9  
-10  
-11  
-12  
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
 13
 
 | **字段** | **描述** |
@@ -99,20 +99,20 @@ wss://api.bot.qq.com/websocket/
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
-6  
-7  
-8  
-9  
-10  
-11  
-12  
-13  
-14  
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
 15
 
 ## 发送心跳 Ack
@@ -126,9 +126,9 @@ wss://api.bot.qq.com/websocket/
 }
 ```
 
-1  
-2  
-3  
+1
+2
+3
 4
 
 心跳发送成功之后会收到 OpCode 11 Heartbeat ACK 消息，`payload` 如下：
@@ -139,8 +139,8 @@ wss://api.bot.qq.com/websocket/
 }
 ```
 
-1  
-2  
+1
+2
 3
 
 ## 恢复登录态 Session
@@ -158,13 +158,13 @@ wss://api.bot.qq.com/websocket/
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
-6  
-7  
+1
+2
+3
+4
+5
+6
+7
 8
 
 其中 `seq` 指的是在接收事件时候的 `s` 字段，我们推荐开发者在处理过事件之后记录下 `s` 这样可以在 `resume` 的时候传递给 `websocket`，`websocket` 会自动补发这个 seq 之后的事件。
@@ -180,11 +180,11 @@ wss://api.bot.qq.com/websocket/
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
+1
+2
+3
+4
+5
 6
 
 ## 分片连接 LoadBalance
@@ -199,7 +199,7 @@ wss://api.bot.qq.com/websocket/
 
 ```
 {
-  "url": "wss://sandbox.api.sgroup.qq.com/websocket",
+  "url": "wss://api.bot.qq.com/websocket",
   "shards": 1,
   "session_start_limit": {
     "total": 1000,
@@ -210,15 +210,15 @@ wss://api.bot.qq.com/websocket/
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
-6  
-7  
-8  
-9  
+1
+2
+3
+4
+5
+6
+7
+8
+9
 10
 
 ### 分片规则

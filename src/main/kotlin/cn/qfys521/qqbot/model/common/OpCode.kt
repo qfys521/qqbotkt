@@ -14,7 +14,8 @@ import kotlinx.serialization.Serializable
 data class ApiErrorResponse(
     @SerialName("errcode") val errCode: Int = 0,
     val message: String = "",
-    @SerialName("trace_id") val traceId: String? = null
+    @SerialName("trace_id") val traceId: String? = null,
+    @SerialName("code") val code: Int = 0
 )
 
 /**

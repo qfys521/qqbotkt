@@ -30,12 +30,27 @@ QQ 机器人开放平台提供以下类型的访问凭证：
 
 ### 返回参数
 
+**成功响应**
+
 | **属性** | **类型** | **说明** |
 | --- | --- | --- |
 | access\_token | string | 获取到的凭证。 |
 | expires\_in | number | 凭证有效时间，单位：秒。目前是 7200 秒之内的值。 |
 
+**失败响应**
+
+| **属性** | **类型** | **说明** |
+| --- | --- | --- |
+| code | number | 错误码，取值见下方「业务错误码」。 |
+| message | string | 错误信息，仅用于人工排查，内容可能随时调整。 |
+
+注意
+
+该接口的业务错误通过响应体的 `code` 返回，即使调用失败，HTTP 返回码仍为 `200`。请优先依据 `code` 判断请求是否成功，不要只依赖 HTTP 返回码；也不要依据 `message` 判定错误类型。详见下方「错误返回码」。
+
 ### 错误码
+
+#### 业务错误码
 
 | **错误码** | **错误信息** | **排查指南** |
 | --- | --- | --- |
@@ -47,7 +62,7 @@ QQ 机器人开放平台提供以下类型的访问凭证：
 ### 调用示例
 
 ```
-curl --location 'https://bots.qq.com/app/getAppAccessToken' \
+curl --location 'https://api.bot.qq.com/app/getAppAccessToken' \
 --header 'Content-Type: application/json' \
 --data '{
   "appId": "APPID",
@@ -55,14 +70,16 @@ curl --location 'https://bots.qq.com/app/getAppAccessToken' \
 }'
 ```
 
-1  
-2  
-3  
-4  
-5  
+1
+2
+3
+4
+5
 6
 
 ### 返回示例
+
+**成功**
 
 ```
 {
@@ -71,9 +88,23 @@ curl --location 'https://bots.qq.com/app/getAppAccessToken' \
 }
 ```
 
-1  
-2  
-3  
+1
+2
+3
+4
+
+**失败**
+
+```
+{
+  "code": 100007,
+  "message": "appid invalid"
+}
+```
+
+1
+2
+3
 4
 
 ## 凭证有效期与刷新
@@ -101,7 +132,7 @@ curl --location 'https://api.bot.qq.com/users/@me' \
 --header 'Authorization: QQBot ACCESS_TOKEN'
 ```
 
-1  
+1
 2
 
 注意

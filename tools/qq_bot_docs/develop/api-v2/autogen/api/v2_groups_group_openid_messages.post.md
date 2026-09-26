@@ -6,7 +6,7 @@
 
 # 发送群聊消息
 
-向指定群发送消息。支持文本/Markdown/ARK/富媒体等类型，可附带内嵌键盘。
+向指定群发送消息。支持文本/Markdown/富媒体等类型，可附带内嵌键盘。
 注意: 群消息不支持流式参数
 
 * 被动消息有效时间 **5 分钟**，每个消息最多回复 **5 次**
@@ -43,7 +43,6 @@
 | msg\_seq | integer | 否 | 回复消息的序号，与 msg\_id 联合使用，避免相同消息 id 回复重复发送，不填默认是 1。相同的 msg\_id + msg\_seq 重复发送会失败。 |
 | media | [MediaInfo](#schema-mediainfo) | 否 | 富媒体消息。msg\_type=7 时填写，file\_info 来自 /v2/groups/{group\_openid}/files |
 | message\_reference | [MessageReference](#schema-messagereference) | 否 | 引用回复。填写后以引用形式展示，关联上下文 |
-| is\_wakeup | boolean | 否 | 指明发送消息为互动召回消息，与 msg\_id，event\_id 互斥使用 |
 
 **MessageMarkdown**
 
@@ -52,6 +51,7 @@
 | template\_id | integer | 否 | 【已废弃】平台 Markdown 模板 ID。使用模板时填写，非模板不传 |
 | content | string | 否 | Markdown 内容。支持的格式参考文档：[Markdown  (opens new window)](https://bot.q.qq.com/wiki/develop/api-v2/server-inter/message/type/markdown.html) |
 | custom\_template\_id | string | 否 | 【已废弃】自定义模板 ID，与 template\_id 二选一 |
+| force\_verify\_image\_resource | boolean | 否 | 是否校验图片转存结果，当为true时，如果出现图片转存失败，则会返回错误，消息不会发送。 默认为false |
 
 **Keyboard**
 
@@ -79,6 +79,7 @@
 | id | string | 否 | 按钮 ID。同一键盘内唯一 |
 | render\_data | [RenderData](#schema-renderdata) | 否 | 按钮渲染 |
 | action | [Action](#schema-action) | 否 | 按钮点击行为 |
+| group\_id | string | 否 | 分组ID, 同一分组内有一个按钮操作后, 其它按钮则变灰不可点击 注意:只有当action.type = 1 时才有效 |
 
 **RenderData**
 
@@ -86,7 +87,7 @@
 | --- | --- | --- | --- |
 | label | string | 否 | 按钮文字，最多 10 字符 |
 | visited\_label | string | 否 | 点击后文字，不传则保持不变 |
-| style | integer | 否 | 0=灰线框, 1=蓝线框, 2=白字, 3=蓝底白字 |
+| style | integer | 否 | 0：灰色线框，1：蓝色线框 3: 白色背景+红色字体, 4:蓝色背景+白色字体 |
 
 **Action**
 
@@ -100,6 +101,7 @@
 | enter | boolean | 否 | 指令按钮可用，点击按钮后直接自动发送 data，仅单聊可用，默认 false。支持版本 8983 |
 | reply | boolean | 否 | 指令按钮可用，指令是否带引用回复本消息，默认 false。支持版本 8983 |
 | anchor | integer | 否 | 本字段仅在指令按钮下有效，设置后后会忽略 action.enter 配置。 设置为 1 时 ，点击按钮自动唤起启手Q选图器，其他值暂无效果。 （仅支持手机端版本 8983+ 的单聊场景，桌面端不支持） |
+| modal | [Modal](#schema-modal) | 否 | 用户点击二次确认操作 |
 
 **Permission**
 
@@ -108,6 +110,14 @@
 | type | integer | 否 | 0=指定用户, 1=管理员, 2=所有人 |
 | specify\_user\_ids | []string | 否 | 有权限的用户 id 的列表 |
 | specify\_role\_ids | []string | 否 | 有权限的身份组 id 的列表（仅频道可用） |
+
+**Modal**
+
+| 名称 | 类型 | 必填 | 描述 |
+| --- | --- | --- | --- |
+| content | string | 否 | 二次确认的提示文本,如果不为空则会进行二次确认. 注意:最多40个字符, 不能有URL |
+| confirm\_text | string | 否 | 二次确认提示确认按钮中展示的文字,可以为空, 默认为"确认" 注意:最多4个字符 |
+| cancel\_text | string | 否 | 二次确认提示取消按钮中的文字,可以为空,默认为"取消" 注意:最多4个字符 |
 
 **MediaInfo**
 
@@ -119,7 +129,7 @@
 
 | 名称 | 类型 | 必填 | 描述 |
 | --- | --- | --- | --- |
-| message\_id | string | 否 | 被引用消息 ID |
+| message\_id | string | 否 | 被引用消息 ID，例如REFIDX\_xxxxxx   - 非机器人发的消息，从消息事件的`MessageScene`的`ext`数组，`msg_idx`字段中获取   - 机器人自己发的消息，从发消息请求响应`ext_info.ref_idx`获取 |
 
 ### 请求示例
 
@@ -135,12 +145,12 @@ POST /v2/groups/B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5/messages
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
-6  
+1
+2
+3
+4
+5
+6
 7
 
 **Markdown + 键盘消息 (msg\_type=2)**
@@ -182,39 +192,39 @@ POST /v2/groups/B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5/messages
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
-6  
-7  
-8  
-9  
-10  
-11  
-12  
-13  
-14  
-15  
-16  
-17  
-18  
-19  
-20  
-21  
-22  
-23  
-24  
-25  
-26  
-27  
-28  
-29  
-30  
-31  
-32  
-33  
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
 34
 
 **富媒体消息 (msg\_type=7)**
@@ -234,67 +244,18 @@ POST /v2/groups/B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5/messages
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
-6  
-7  
-8  
-9  
-10  
-11  
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
 12
-
-**卡片消息 (msg\_type=8)**
-
-```
-POST /v2/groups/B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5/messages
-{
-    "msg_type": 8,
-    "card": {
-        "type": "tuwen",
-        "content": {
-            "description": "2分钟完成注册并创建QQBot 无缝对接OpenClaw",
-            "pic_url": "https://qqminiapp.cdn-go.cn/qq-open-platform/9b9327f1/assets/33-2-GiI9drV8.png",
-            "title": "QQ开放平台",
-            "url": "https://q.qq.com/#/"
-        }
-    },
-    "msg_id": "ROBOT1.0_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    "msg_seq": 22
-}
-
-// 当type为tuwen时 会发送一个包括标题,描述,图片,跳转链接的消息.
-// title 表示卡片消息的标题.
-// description 表示卡片消息的描述.
-// pic_url: 表示卡片消息中出现的图片.
-// url: 表示卡片消息中的跳转链接.
-```
-
-1  
-2  
-3  
-4  
-5  
-6  
-7  
-8  
-9  
-10  
-11  
-12  
-13  
-14  
-15  
-16  
-17  
-18  
-19  
-20  
-21  
-22
 
 ## 响应
 
@@ -326,12 +287,12 @@ POST /v2/groups/B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5/messages
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
-6  
+1
+2
+3
+4
+5
+6
 7
 
 ### 错误码

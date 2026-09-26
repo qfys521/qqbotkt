@@ -315,7 +315,12 @@ data class MessageResult(
 @Serializable
 data class GroupBotState(
     @SerialName("group_openid") val groupOpenId: String? = null,
-    val state: Int = 0
+    val state: Int = 0,
+    @SerialName("member_openid") val memberOpenId: String? = null,
+    @SerialName("joined_at") val joinedAt: String? = null,
+    @SerialName("allow_proactive_msg") val allowProactiveMsg: Boolean? = null,
+    @SerialName("recv_msg_setting") val recvMsgSetting: String? = null,
+    @SerialName("member_role") val memberRole: String? = null
 )
 
 /**

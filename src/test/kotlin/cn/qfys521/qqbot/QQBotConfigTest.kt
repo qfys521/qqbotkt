@@ -16,7 +16,7 @@ class QQBotConfigTest {
         val config = QQBotConfig(appId = "12345", clientSecret = "secret")
         assertFalse(config.sandbox)
         assertEquals("https://api.bot.qq.com", config.baseUrl)
-        assertEquals("https://bots.qq.com/app/getAppAccessToken", config.tokenUrl)
+        assertEquals("https://api.bot.qq.com/app/getAppAccessToken", config.tokenUrl)
     }
 
     @Test

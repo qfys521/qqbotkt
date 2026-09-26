@@ -1,5 +1,6 @@
 package cn.qfys521.qqbot.http
 
+import cn.qfys521.qqbot.model.api.*
 import cn.qfys521.qqbot.model.guild.Channel
 import cn.qfys521.qqbot.model.guild.CreateChannelRequest
 import cn.qfys521.qqbot.model.guild.Guild
@@ -92,7 +93,7 @@ interface QQBotApi {
     /**
      * 采用类似打字机或流式分块协议，向目标用户会话持续发送流式消息。
      *
-     * 对应 HTTP 接口：`POST /v2/users/{user_openid}/stream/messages`
+     * 对应 HTTP 接口：`POST /v2/users/{user_openid}/stream_messages`
      *
      * @param userOpenId 目标用户会话 OpenID。
      * @param request 准备投递流式的特定消息体。
@@ -171,7 +172,7 @@ interface QQBotApi {
     /**
      * 探查并确认自身在此群中被设定的管理与互动许可状态（包括频率管控与发言特权）。
      *
-     * 对应 HTTP 接口：`GET /v2/groups/{group_openid}/bot-state`
+     * 对应 HTTP 接口：`GET /v2/groups/{group_openid}/bot_state`
      *
      * @param groupOpenId 群会话 OpenID。
      * @return 机器人群状态描述快照。
@@ -188,6 +189,41 @@ interface QQBotApi {
      * @return 换得 `file_info` 文件令牌的结构。
      */
     suspend fun uploadGroupMedia(groupOpenId: String, request: UploadMediaRequest): UploadMediaResponse
+
+    // ==================== 群管理与扩展能力 ====================
+
+    suspend fun generateShareLink(request: ShareLinkRequest = ShareLinkRequest()): ShareLinkResponse
+
+    suspend fun getGroupMembers(groupOpenId: String, cursor: String? = null): GroupMemberPage
+    suspend fun getGroupMember(groupOpenId: String, memberOpenId: String): GroupMemberDetail
+    suspend fun getGroupBlacklist(groupOpenId: String, cursor: String? = null, limit: Int? = null): BlacklistPage
+    suspend fun updateGroupBlacklist(groupOpenId: String, request: BlacklistOperationRequest): BlacklistOperationResponse
+    suspend fun getRestrictChatSetting(groupOpenId: String): RestrictChatSetting
+    suspend fun updateRestrictChatSetting(groupOpenId: String, request: RestrictChatSettingRequest)
+    suspend fun getJoinRequests(groupOpenId: String, cursor: String? = null, limit: Int? = null): JoinRequestPage
+    suspend fun approveJoinRequest(groupOpenId: String, memberOpenId: String, request: ApproveJoinRequest)
+    suspend fun batchRemoveMembers(groupOpenId: String, request: BatchRemoveMembersRequest): BatchRemoveMembersResponse
+
+    suspend fun getJoinApprovalStrategies(cursor: String? = null, limit: Int? = null): JoinApprovalStrategyPage
+    suspend fun createJoinApprovalStrategy(request: CreateJoinApprovalStrategyRequest): CreateJoinApprovalStrategyResponse
+    suspend fun updateJoinApprovalStrategy(strategyId: String, request: UpdateJoinApprovalStrategyRequest): UpdateJoinApprovalStrategyResponse
+    suspend fun deleteJoinApprovalStrategy(strategyId: String)
+    suspend fun executeJoinApprovalStrategy(strategyId: String)
+    suspend fun updateJoinApprovalWhitelist(strategyId: String, request: WhitelistUsersRequest): WhitelistUsersResponse
+
+    suspend fun getMenu(): MenuResponse
+    suspend fun updateMenu(request: MenuRequest): MenuVersion
+    suspend fun getPanels(scope: String, cursor: String? = null, limit: Int? = null): PanelPage
+    suspend fun createPanel(request: CreatePanelRequest): PanelId
+    suspend fun getPanel(panelId: String): PanelRecord
+    suspend fun updatePanel(panelId: String, request: UpdatePanelRequest): MenuVersion
+    suspend fun updatePanelTargets(panelId: String, request: PanelTargetRequest)
+    suspend fun deletePanel(panelId: String)
+
+    suspend fun prepareGroupUpload(groupOpenId: String, request: UploadPrepareRequest): UploadPrepareResponse
+    suspend fun finishGroupUpload(groupOpenId: String, request: UploadPartFinishRequest)
+    suspend fun prepareC2CUpload(userOpenId: String, request: UploadPrepareRequest): UploadPrepareResponse
+    suspend fun finishC2CUpload(userOpenId: String, request: UploadPartFinishRequest)
 
     // ==================== 频道与子频道 (Guild & Channel) ====================
 
@@ -257,7 +293,7 @@ interface QQBotApi {
     /**
      * 在接到用户与页面按钮或指令交互的 `INTERACTION_CREATE` 事件后，将反馈应答送往此网关路径。
      *
-     * 对应 HTTP 接口：`PUT /v2/interactions/{interaction_id}`
+     * 对应 HTTP 接口：`PUT /interactions/{interaction_id}`
      *
      * @param interactionId 上传派发中下发的交互事件 `id`。
      * @param request 应答附随的返回码与会话召回标签（默认为成功的 `code=0`）。

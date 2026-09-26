@@ -22,7 +22,7 @@ QQ 机器人通过开放的平台承载机器人的定制化功能，让开发�
 
 ## 接入流程
 
-![接入流程](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/Aspose.Words.a59f0707-65ac-4bec-8de6-d0d8efeb74d0.001.23112ce9.png)
+![接入流程](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/Aspose.Words.a59f0707-65ac-4bec-8de6-d0d8efeb74d0.001.23112ce9.png)
 
 ### 1. 阅读文档
 
@@ -38,7 +38,7 @@ QQ 机器人通过开放的平台承载机器人的定制化功能，让开发�
 
 #### 步骤总览
 
-![步骤总览](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/open_platform_step.52d1a673.png)
+![步骤总览](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/open_platform_step.52d1a673.png)
 
 注意
 
@@ -47,7 +47,7 @@ QQ 机器人通过开放的平台承载机器人的定制化功能，让开发�
 
 #### 2.1 点击「立即注册」
 
-![立即注册](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/open_platform_register.25acf3a2.png)
+![立即注册](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/open_platform_register.25acf3a2.png)
 
 温馨提示
 
@@ -55,11 +55,11 @@ QQ 机器人通过开放的平台承载机器人的定制化功能，让开发�
 
 #### 2.2 选择企业
 
-![选择企业](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/open_platform_choose_business.596358a6.png)
+![选择企业](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/open_platform_choose_business.596358a6.png)
 
 #### 2.3 填写邮箱
 
-![填写邮箱](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/open_platform_mail.66b73805.png)
+![填写邮箱](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/open_platform_mail.66b73805.png)
 
 温馨提示
 
@@ -67,7 +67,7 @@ QQ 机器人通过开放的平台承载机器人的定制化功能，让开发�
 
 #### 2.4 激活邮箱
 
-![激活邮箱](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/open_platform_mail_active.ffdec0d7.png)
+![激活邮箱](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/open_platform_mail_active.ffdec0d7.png)
 
 温馨提示
 
@@ -75,7 +75,7 @@ QQ 机器人通过开放的平台承载机器人的定制化功能，让开发�
 
 #### 2.5 上传工商信息
 
-![上传工商信息](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/open_platform_upload_business.d399a006.png)
+![上传工商信息](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/open_platform_upload_business.d399a006.png)
 
 温馨提示
 
@@ -83,7 +83,7 @@ QQ 机器人通过开放的平台承载机器人的定制化功能，让开发�
 
 #### 2.6 绑定管理员
 
-![绑定管理员](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/open_platform_bind_manager.d8b7e832.png)
+![绑定管理员](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/open_platform_bind_manager.d8b7e832.png)
 
 温馨提示
 
@@ -95,7 +95,7 @@ QQ 机器人通过开放的平台承载机器人的定制化功能，让开发�
 * 此步骤可与第三步创建应用同步进行，但此步骤需尽快完成，否则会影响应用的提审。
 * 入口：点击页面提示条上的「查看详情」，即可进入详情页面查看进度。
 
-![资质审核](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/open_platform_audit.5857104a.png)
+![资质审核](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/open_platform_audit.5857104a.png)
 
 ##### 资质审核详细流程
 
@@ -106,7 +106,7 @@ QQ 机器人通过开放的平台承载机器人的定制化功能，让开发�
   + 打款帐号主体：深圳市腾讯计算机系统有限公司，打款银行账号：755901658210820。
 * **审核中-校验金额：**  收到打款后，请在规定时间内于开发者管理端回填收到的打款金额进行验证。
 
-  + 金额校验次数有限，请确认收到打款后进入二级页面，填写具体的金额，如次数用完且校验不通过，该账号将被冻结。![资质审核](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/open_platform_audit_detail.34c33bf9.png)
+  + 金额校验次数有限，请确认收到打款后进入二级页面，填写具体的金额，如次数用完且校验不通过，该账号将被冻结。![资质审核](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/open_platform_audit_detail.34c33bf9.png)
 
 ### 3 个人主体入驻
 
@@ -114,11 +114,11 @@ QQ 机器人通过开放的平台承载机器人的定制化功能，让开发�
 
 #### 步骤总览
 
-![步骤总览](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/open_platform_individual_step.f838186f.png)
+![步骤总览](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/open_platform_individual_step.f838186f.png)
 
 #### 3.1 点击「立即注册」
 
-![立即注册](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/open_platform_individual_register.25acf3a2.png)
+![立即注册](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/open_platform_individual_register.25acf3a2.png)
 
 温馨提示
 
@@ -126,11 +126,11 @@ QQ 机器人通过开放的平台承载机器人的定制化功能，让开发�
 
 #### 3.2 选择个人
 
-![选择个人](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/open_platform_choose_individual.518e5216.png)
+![选择个人](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/open_platform_choose_individual.518e5216.png)
 
 #### 3.3 填写邮箱
 
-![填写邮箱](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/open_platform_individual_mail.f5596d22.png)
+![填写邮箱](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/open_platform_individual_mail.f5596d22.png)
 
 温馨提示
 
@@ -138,7 +138,7 @@ QQ 机器人通过开放的平台承载机器人的定制化功能，让开发�
 
 #### 3.4 激活邮箱
 
-![激活邮箱](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/open_platform_individual_mail_active.2d37988f.png)
+![激活邮箱](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/open_platform_individual_mail_active.2d37988f.png)
 
 温馨提示
 
@@ -146,7 +146,7 @@ QQ 机器人通过开放的平台承载机器人的定制化功能，让开发�
 
 #### 3.6 绑定管理员
 
-![绑定管理员](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/open_platform_individual_bind_manager.641d5e87.png)
+![绑定管理员](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/open_platform_individual_bind_manager.641d5e87.png)
 
 温馨提示
 
@@ -160,25 +160,25 @@ QQ 机器人通过开放的平台承载机器人的定制化功能，让开发�
 
 #### 4.1 点击「创建机器人」
 
-![创建应用](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/open_platform_create_app.fac45242.png)
+![创建应用](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/open_platform_create_app.fac45242.png)
 
 #### 4.2 填写资料
 
 ##### 4.2.1 机器人资料填写页面
 
-![机器人资料填写页面](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/open_platform_robot_info_231017.457a7ce0.png)
+![机器人资料填写页面](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/open_platform_robot_info_231017.457a7ce0.png)
 
 ##### 4.2.2 进入管理端
 
 资料提交成功后，即会生成`appid`，点击对应的应用即可跳转管理端。
 
-![进入管理端](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/open_platform_bot_list.4e9d63db.png)
+![进入管理端](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/open_platform_bot_list.4e9d63db.png)
 
 ### 5. 机器人发布流程
 
 > 建议按照首页发布流程，分别完成机器人配置、开发、提交审核；审核通过并手动上线后，方可在QQ客户端添加机器人至对应场景。
 
-![机器人发布流程](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/bot_publish_process.bccfb339.png)
+![机器人发布流程](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/bot_publish_process.bccfb339.png)
 
 ### 6. 基础信息设置
 
@@ -188,7 +188,7 @@ QQ 机器人通过开放的平台承载机器人的定制化功能，让开发�
 >
 > 基本信息修改限制：每月可修改`5`次。
 
-![基础信息设置](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/bot_base_info_set.d1c4d487.png)
+![基础信息设置](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/bot_base_info_set.d1c4d487.png)
 
 **操作步骤：**
 
@@ -213,29 +213,29 @@ QQ 机器人通过开放的平台承载机器人的定制化功能，让开发�
 
 沙箱频道仅可设置当前用户为频道主/管理员的频道、沙箱群仅可设置当前用户为群主/群管理员的群，且沙箱频道成员、沙箱群成员不可大于`20`人。
 
-![配置沙箱环境](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/bot_sandbox_set.26edce09.png)
+![配置沙箱环境](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/bot_sandbox_set.26edce09.png)
 
 温馨提示
 
-（1）配置沙箱群/频道，需要先在QQ客户端创建符合沙箱要求的QQ群/QQ频道；  
-（2）在频道场景，机器人仍然保留「公域」/「私域」机器人的区分，设置为公域机器人保存确认后不可切换为私域机器人，但在「使用范围与人员」可设置公域机器人的允许添加范围：“全部用户可添加”/“仅白名单用户可添加”；  
+（1）配置沙箱群/频道，需要先在QQ客户端创建符合沙箱要求的QQ群/QQ频道；
+（2）在频道场景，机器人仍然保留「公域」/「私域」机器人的区分，设置为公域机器人保存确认后不可切换为私域机器人，但在「使用范围与人员」可设置公域机器人的允许添加范围：“全部用户可添加”/“仅白名单用户可添加”；
 （3）配置沙箱频道/群后，机器人会出现在沙箱频道/沙箱群的机器人列表当中。
 
 #### 7.2 添加机器人至沙箱环境
 
 配置好沙箱环境后，可通过机器人资料卡将测试机器人添加进沙箱频道/沙箱群/沙箱账号，沙箱群/沙箱频道也可通过群/频道设置页的机器人列表添加机器人。
 
-![添加机器人至沙箱环境](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/bot_add_robot_to_sandbox.3d3c69e8.png)
+![添加机器人至沙箱环境](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/bot_add_robot_to_sandbox.3d3c69e8.png)
 
 ##### 7.2.1 添加到沙箱频道
 
 方法一：移动端点击沙箱频道封面图-->选择「机器人」进入商店页-->点击添加测试机器人
 
-![添加到沙箱频道1](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/add_robot_to_sandbox_1.101a7910.png)
+![添加到沙箱频道1](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/add_robot_to_sandbox_1.101a7910.png)
 
 方法二：移动端登陆管理员QQ号-->扫描管理端频道机器人二维码-->打开机器人资料卡-->添加至频道-->选择配置好的沙箱频道-->确认添加
 
-![添加到沙箱频道2](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/add_robot_to_sandbox_2.7e874327.png)
+![添加到沙箱频道2](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/add_robot_to_sandbox_2.7e874327.png)
 
 温馨提示
 
@@ -245,7 +245,7 @@ QQ 机器人通过开放的平台承载机器人的定制化功能，让开发�
 
 沙箱频道添加好测试机器人后，已经配置沙箱私信账号的QQ号，从沙箱频道打开机器人资料卡，选择私信，即进入私信沙箱环境
 
-![进入私信沙箱](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/join_c2c_sandbox.70ecf4aa.png)
+![进入私信沙箱](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/join_c2c_sandbox.70ecf4aa.png)
 
 温馨提示
 
@@ -255,11 +255,11 @@ QQ 机器人通过开放的平台承载机器人的定制化功能，让开发�
 
 方法一：移动端点击沙箱群"设置"-->选择「群机器人」进入商店页-->点击添加测试机器人
 
-![添加到沙箱群1](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/add_to_sandbox_group_1.93ac3e70.png)
+![添加到沙箱群1](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/add_to_sandbox_group_1.93ac3e70.png)
 
 方法二：移动端登陆管理员QQ号-->扫描管理端QQ群和消息列表机器人二维码-->打开机器人web资料卡-->点击「添加到机器人」-->跳转到native资料卡-->分享到沙箱群-->打开native资料卡-->点击「添加到本群」-->选择配置好的沙箱群-->授权确认添加
 
-![添加到沙箱群2](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/bot_add_to_sandbox_group_2.34392492.png)
+![添加到沙箱群2](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/bot_add_to_sandbox_group_2.34392492.png)
 
 温馨提示
 
@@ -269,7 +269,7 @@ QQ 机器人通过开放的平台承载机器人的定制化功能，让开发�
 
 移动端登陆管理员QQ号-->扫描管理端QQ群和消息列表机器人二维码-->打开机器人资料卡-->点击"发消息"-->授权确认添加-->进入消息列表开启沙箱单聊对话
 
-![添加到沙箱账号消息列表](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/add_sandbox_c2c_list.27354714.png)
+![添加到沙箱账号消息列表](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/add_sandbox_c2c_list.27354714.png)
 
 ### 8. 开发基础设置
 
@@ -279,7 +279,7 @@ QQ 机器人通过开放的平台承载机器人的定制化功能，让开发�
 
 此处主要展示机器人`QQ号`、`AppID`、`Token`、`AppSecret`。
 
-![机器人 AppID](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/robot_appid.795e9fc1.png)
+![机器人 AppID](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/robot_appid.795e9fc1.png)
 
 温馨提示
 
@@ -289,13 +289,13 @@ QQ 机器人通过开放的平台承载机器人的定制化功能，让开发�
 
 在跳转`h5`需要`OAuth`的时候使用 （如机器人服务是跳转小程序，可忽略），回调地址上限为`10`条。
 
-![回调地址](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/callback_url.95957e29.png)
+![回调地址](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/callback_url.95957e29.png)
 
 #### 8.3 消息URL白名单配置
 
 填写机器人下发消息中所包含的链接域名，域名需在此处提交后才可生效，域名上限为`20`条，每年可修改`50`次。
 
-![消息URL白名单配置](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/info_url_white_set.cc6a893e.png)
+![消息URL白名单配置](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/info_url_white_set.cc6a893e.png)
 
 温馨提示
 
@@ -309,7 +309,7 @@ QQ 机器人通过开放的平台承载机器人的定制化功能，让开发�
 
 **产品ID填写：** 需要在此处填写兔小巢反馈空间的产品 ID，C 端用户的机器人反馈才可同步至此处，详细获取路径如开发者端提示：设置-->产品设置-->产品 ID。
 
-![频道用户意见反馈](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/channel_user_feedback.0c3e7a6a.png)
+![频道用户意见反馈](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/channel_user_feedback.0c3e7a6a.png)
 
 温馨提示
 
@@ -317,7 +317,7 @@ QQ 机器人通过开放的平台承载机器人的定制化功能，让开发�
 
 #### 8.5 IP白名单配置
 
-![IP白名单配置](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/ip_white_list.fa686a8a.png)
+![IP白名单配置](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/ip_white_list.fa686a8a.png)
 
 为了防范接口调用安全风险，平台将支持机器人配置IP白名单。（当前只针对新增机器人默认启用ip白名单，后续会逐渐对旧的机器人进行灰度）
 
@@ -337,7 +337,7 @@ IP白名单目的是保证开发者安全，请配置有效的公网唯一IP。
 
 开发者可以通过【发布设置】来配置机器人指令与服务，此处配置的指令与服务将会在C端指令面板、资料卡等处展示，以便用户与机器人快捷完成交互，后端逻辑均需通过代码开发实现。
 
-![发布设置](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/bot_pulish_set.e6b760c9.png)
+![发布设置](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/bot_pulish_set.e6b760c9.png)
 
 #### 9.1 功能配置
 
@@ -357,7 +357,7 @@ IP白名单目的是保证开发者安全，请配置有效的公网唯一IP。
 * **权限菜单**：请选择本服务是开放给所有用户还是仅针对频道主和管理员。
 * **使用场景**：请选择该指令所需配置的用户场景，包括QQ频道、频道私信、QQ群、消息列表等共四个场景，实际所展示的可配置场景取决于当前机器人开发者的角色、所具备的场景权限和沙箱配置状态。
 
-![服务配置](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/bot_func_config_server.e6c42ac4.png)
+![服务配置](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/bot_func_config_server.e6c42ac4.png)
 
 注意
 
@@ -373,7 +373,7 @@ IP白名单目的是保证开发者安全，请配置有效的公网唯一IP。
 * **权限菜单**：请选择本指令是开放给所有用户还是仅针对频道主和管理员。
 * **使用场景**：请选择该指令所需配置的用户场景，包括QQ频道、频道私信、QQ群、消息列表等共四个场景，实际所展示的可配置场景取决于当前机器人开发者的角色、所具备的场景权限和沙箱配置状态。
 
-![指令配置](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/bot_func_config_command.1e7c6897.png)
+![指令配置](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/bot_func_config_command.1e7c6897.png)
 
 开发者可添加、删减指令，管理端配置的功能顺序与 C 端机器人指令集展示的功能顺序一致，建议将常用/核心的指令前置。
 
@@ -388,7 +388,7 @@ IP白名单目的是保证开发者安全，请配置有效的公网唯一IP。
 * **appID**：请输入小程序服务的`ID`号。
 * **path**：请输入小程序的路径。
 
-![快捷菜单配置](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/bot_func_config_shortcut_server.ed0f5b09.png)
+![快捷菜单配置](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/bot_func_config_shortcut_server.ed0f5b09.png)
 
 **指令**
 
@@ -397,7 +397,7 @@ IP白名单目的是保证开发者安全，请配置有效的公网唯一IP。
 * **指令名**：请简单凝练地描述指令，字数不超过`8`个中文字符或 `16`个英文字符，内容需符合平台运营规范。
 * **指令介绍**：请简单的对指令进行描述，字数不超过`15`个中文字符或`30`个英文字符，内容需符合平台运营规范。
 
-![快捷菜单配置](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/bot_func_config_shortcut_com.e1c79a2b.png)
+![快捷菜单配置](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/bot_func_config_shortcut_com.e1c79a2b.png)
 
 注意
 
@@ -407,7 +407,7 @@ IP白名单目的是保证开发者安全，请配置有效的公网唯一IP。
 
 开发者需下载机器人自测报告模版，在自测频道内根据模板要求测试机器人的功能，并填写完自测报告后上传。
 
-![自测报告](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/bot_func_config_selftest_report.b349e996.png) ![自测报告2](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/bot_func_config_selftest_report_2.de0c2254.png)
+![自测报告](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/bot_func_config_selftest_report.b349e996.png) ![自测报告2](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/bot_func_config_selftest_report_2.de0c2254.png)
 
 * **自测报告**：[机器人自测报告模板  (opens new window)](https://doc.weixin.qq.com/sheet/e3_AHEAcwacAAYhHyOx1ZxTvSm6nHCK0?scode=AJEAIQdfAAoNXeKQ1dAHEAcwacAAY&tab=BB08J2)。
 
@@ -420,7 +420,7 @@ IP白名单目的是保证开发者安全，请配置有效的公网唯一IP。
 * 审核结果返回前，不可重复提交审核。
 * 频道白名单、群白名单、消息列表单聊用户白名单上限各`20`条。
 
-![使用范围与人员配置](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/bot_scope_set.b5b731a6.png)
+![使用范围与人员配置](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/bot_scope_set.b5b731a6.png)
 
 温馨提示
 
@@ -443,7 +443,7 @@ IP白名单目的是保证开发者安全，请配置有效的公网唯一IP。
 * **发布权限** ：拥有该权限的成员可编辑和提交服务、指令等模块。
 * **开发设置** ：拥有该权限的成员可编辑和提交回调地址、URL 模块。
 
-![权限管理](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/permission_manage.37cd53ca.png)
+![权限管理](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/permission_manage.37cd53ca.png)
 
 温馨提示
 

@@ -40,9 +40,9 @@ data class QQBotConfig(
         }
 
     /**
-     * QQ 机器人 AccessToken 鉴权接口请求根路径 (`https://bots.qq.com/app/getAppAccessToken`)。
+     * QQ 机器人 AccessToken 鉴权接口请求根路径 (`https://api.bot.qq.com/app/getAppAccessToken`)。
      */
-    val tokenUrl: String = "https://bots.qq.com/app/getAppAccessToken"
+    val tokenUrl: String = "https://api.bot.qq.com/app/getAppAccessToken"
 
     /**
      * 针对当前实例进行基础必填项合规自检。

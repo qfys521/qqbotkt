@@ -22,7 +22,7 @@ POST /guilds/{guild_id}/api_permission/demand
 
 ## 示例图
 
-![创建频道API接口权限授权](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.20.0/assets/img/post_api_permission_demand.0e7274cb.png)
+![创建频道API接口权限授权](https://qq-ai.cdn-go.cn/web/bot-docs/-/v1.33.0/assets/img/post_api_permission_demand.0e7274cb.png)
 
 ## Content-Type
 
@@ -63,13 +63,13 @@ application/json
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
-6  
-7  
+1
+2
+3
+4
+5
+6
+7
 8
 
 响应数据包
@@ -87,13 +87,13 @@ application/json
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
-6  
-7  
-8  
-9  
+1
+2
+3
+4
+5
+6
+7
+8
+9
 10

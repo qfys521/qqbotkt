@@ -19,11 +19,11 @@ payload 指的是在 websocket 连接上传输的数据，网关的上下行消�
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
+1
+2
+3
+4
+5
 6
 
 `op` 指的是 opcode，全部 opcode 列表参考 [opcode](/wiki/develop/api-v2/dev-prepare/interface-framework/opcode.html)。
@@ -37,7 +37,7 @@ payload 指的是在 websocket 连接上传输的数据，网关的上下行消�
 第一步先调用 [/gateway](/wiki/develop/api-v2/openapi/wss/url_get.html) 或 [/gateway/bot](/wiki/develop/api-v2/openapi/wss/shard_url_get.html) 接口获取网关地址。 会得到一个类似下面这样的地址：
 
 ```
-wss://api.sgroup.qq.com/websocket/
+wss://api.bot.qq.com/websocket/
 ```
 
 1
@@ -53,11 +53,11 @@ wss://api.sgroup.qq.com/websocket/
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
+1
+2
+3
+4
+5
 6
 
 ### 2.鉴权连接
@@ -80,18 +80,18 @@ wss://api.sgroup.qq.com/websocket/
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
-6  
-7  
-8  
-9  
-10  
-11  
-12  
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
 13
 
 `token` 是创建机器人的时候分配的，格式为`Bot {appid}.{app_token}`
@@ -122,20 +122,20 @@ wss://api.sgroup.qq.com/websocket/
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
-6  
-7  
-8  
-9  
-10  
-11  
-12  
-13  
-14  
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
 15
 
 ### 3.发送心跳
@@ -149,9 +149,9 @@ wss://api.sgroup.qq.com/websocket/
 }
 ```
 
-1  
-2  
-3  
+1
+2
+3
 4
 
 心跳发送成功之后会收到 [OpCode 11 Heartbeat ACK](/wiki/develop/api-v2/dev-prepare/interface-framework/opcode.html) 消息，如下：
@@ -162,8 +162,8 @@ wss://api.sgroup.qq.com/websocket/
 }
 ```
 
-1  
-2  
+1
+2
 3
 
 ### 4.恢复连接
@@ -181,13 +181,13 @@ wss://api.sgroup.qq.com/websocket/
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
-6  
-7  
+1
+2
+3
+4
+5
+6
+7
 8
 
 其中 `seq` 指的是在接收事件时候的 `s` 字段，我们推荐开发者在处理过事件之后记录下 `s` 这样可以在 resume 的时候传递给 websocket，websocket 会自动补发这个 seq 之后的事件。
@@ -203,9 +203,9 @@ wss://api.sgroup.qq.com/websocket/
 }
 ```
 
-1  
-2  
-3  
-4  
-5  
+1
+2
+3
+4
+5
 6

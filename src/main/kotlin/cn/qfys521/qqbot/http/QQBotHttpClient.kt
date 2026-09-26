@@ -5,6 +5,7 @@ import cn.qfys521.qqbot.config.QQBotConfig
 import cn.qfys521.qqbot.exception.QQBotApiException
 import cn.qfys521.qqbot.exception.QQBotException
 import cn.qfys521.qqbot.model.common.ApiErrorResponse
+import cn.qfys521.qqbot.model.api.*
 import cn.qfys521.qqbot.model.guild.Channel
 import cn.qfys521.qqbot.model.guild.CreateChannelRequest
 import cn.qfys521.qqbot.model.guild.Guild
@@ -19,7 +20,6 @@ import cn.qfys521.qqbot.model.user.GuildItem
 import cn.qfys521.qqbot.model.user.UserMe
 import cn.qfys521.qqbot.model.gateway.WssUrlResponse
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -34,10 +34,12 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
-import org.slf4j.LoggerFactory
 import java.io.IOException
 
 /**
@@ -61,8 +63,6 @@ class QQBotHttpClient(
     private val json: Json = defaultJson
 ) : QQBotApi {
 
-    private val logger = LoggerFactory.getLogger(QQBotHttpClient::class.java)
-
     companion object {
         /**
          * 默认通用宽松 JSON 序列化器配置，能够忽略未知参数，允许非规范 JSON 并跳过默认值序列化。
@@ -75,6 +75,8 @@ class QQBotHttpClient(
         }
     }
 
+    private fun String.urlEncode(): String = java.net.URLEncoder.encode(this, Charsets.UTF_8).replace("+", "%20")
+
     /**
      * 内部通用 HTTP 请求派发函数，封装鉴权、错误解析、退避重试及 Token 刷新的基础流程。
      *
@@ -86,102 +88,103 @@ class QQBotHttpClient(
     private suspend inline fun <reified T> executeRequest(
         method: String,
         path: String,
-        body: Any? = null
+        body: Any? = null,
+        query: Map<String, String> = emptyMap()
     ): T {
-        var attempt = 0
-        var forceRefresh = false
-        val maxAttempts = config.maxRetries.coerceAtLeast(1)
+        var retries = 0
+        var authRetryUsed = false
+        var token = tokenManager.getAccessToken()
+        val fullUrl = "${config.baseUrl.trimEnd('/')}$path"
+        val requestUrl = if (query.isEmpty()) fullUrl else fullUrl + "?" + query.entries.joinToString("&") {
+            "${it.key.urlEncode()}=${it.value.urlEncode()}"
+        }
 
         while (true) {
-            attempt++
-            val token = tokenManager.getAccessToken(forceRefresh = forceRefresh)
-            val fullUrl = "${config.baseUrl}$path"
             try {
                 val response: HttpResponse = when (method) {
                     "GET" -> httpClient.get {
-                        url(fullUrl)
+                        url(requestUrl)
                         header(HttpHeaders.Authorization, "QQBot $token")
                     }
                     "POST" -> httpClient.post {
-                        url(fullUrl)
+                        url(requestUrl)
                         header(HttpHeaders.Authorization, "QQBot $token")
                         contentType(ContentType.Application.Json)
                         if (body != null) setBody(body)
                     }
                     "DELETE" -> httpClient.delete {
-                        url(fullUrl)
+                        url(requestUrl)
                         header(HttpHeaders.Authorization, "QQBot $token")
                     }
                     "PATCH" -> httpClient.patch {
-                        url(fullUrl)
+                        url(requestUrl)
                         header(HttpHeaders.Authorization, "QQBot $token")
                         contentType(ContentType.Application.Json)
                         if (body != null) setBody(body)
                     }
                     "PUT" -> httpClient.put {
-                        url(fullUrl)
+                        url(requestUrl)
                         header(HttpHeaders.Authorization, "QQBot $token")
                         contentType(ContentType.Application.Json)
                         if (body != null) setBody(body)
                     }
-                    else -> throw IllegalArgumentException("不支持的 HTTP 方法: $method")
+                    else -> error("Unsupported HTTP method: $method")
                 }
+                val status = response.status.value
+                val text = response.bodyAsText()
+                val apiError = try {
+                    json.decodeFromString<ApiErrorResponse>(text)
+                } catch (_: Exception) {
+                    null
+                }
+                val code = apiError?.code?.takeIf { it != 0 } ?: apiError?.errCode ?: 0
 
-                val traceId = response.headers["X-Tps-trace-ID"]
-                val status = response.status
-
-                if (status.isSuccess()) {
-                    val bodyText = response.bodyAsText()
-                    if (bodyText.isBlank() || status.value == 204) {
+                if (response.status.isSuccess() && code == 0) {
+                    if (T::class == Unit::class) {
                         @Suppress("UNCHECKED_CAST")
                         return Unit as T
                     }
-                    return json.decodeFromString<T>(bodyText)
+                    if (text.isBlank()) {
+                        throw QQBotException("Empty response for $method $path (HTTP $status)")
+                    }
+                    return json.decodeFromString<T>(text)
                 }
 
-                // 错误回包解析
-                val bodyText = response.bodyAsText()
-                val apiError = try {
-                    json.decodeFromString<ApiErrorResponse>(bodyText)
-                } catch (e: Exception) {
-                    ApiErrorResponse(errCode = status.value, message = bodyText, traceId = traceId)
+                if ((status == 401 || code == 11243 || code == 11241) && !authRetryUsed) {
+                    authRetryUsed = true
+                    token = tokenManager.getAccessToken(forceRefresh = true, rejectedToken = token)
+                    continue
                 }
-                val errorTraceId = apiError.traceId ?: traceId
 
-                // 若遇到 Token 过期相关错误（401 / 11243 / 11241），且还未强制重刷过
-                if ((status.value == 401 || apiError.errCode == 11243 || apiError.errCode == 11241) && !forceRefresh) {
-                    logger.warn("检测到 AccessToken 可能已过期(errCode={})，正在尝试重刷凭证并重发...", apiError.errCode)
-                    forceRefresh = true
+                if ((status == 429 || (method == "GET" && status in 500..599)) && retries < config.maxRetries) {
+                    val retryAfter = response.headers[HttpHeaders.RetryAfter]?.toLongOrNull()
+                        ?.coerceIn(0, 300)?.times(1000L)
+                    delay(retryAfter ?: retryDelay(retries))
+                    retries++
                     continue
                 }
 
                 throw QQBotApiException(
-                    errCode = apiError.errCode,
-                    errMessage = apiError.message,
-                    traceId = errorTraceId,
-                    httpStatusCode = status.value
+                    errCode = code.takeIf { it != 0 } ?: status,
+                    errMessage = apiError?.message?.takeIf { it.isNotBlank() } ?: text,
+                    traceId = apiError?.traceId ?: response.headers["X-Tps-trace-ID"],
+                    httpStatusCode = status
                 )
-
-            } catch (e: QQBotApiException) {
-                // 若遇限流 429 且可尝试重试
-                if (e.httpStatusCode == 429 && attempt < maxAttempts) {
-                    val delayMs = 1000L * attempt
-                    logger.warn("请求 {} 遇到频率限流(429)，将等待 {}ms 后继续第 {}/{} 次重试", fullUrl, delayMs, attempt, maxAttempts)
-                    delay(delayMs)
-                    continue
-                }
+            } catch (e: CancellationException) {
                 throw e
             } catch (e: IOException) {
-                if (attempt >= maxAttempts) {
-                    throw QQBotException("网络调用连续失败，已达到设定次数上界 ($maxAttempts): ${e.message}", e)
+                currentCoroutineContext().ensureActive()
+                if (method != "GET" || retries >= config.maxRetries) {
+                    throw QQBotException("Network request failed: $method $path", e)
                 }
-                val delayMs = 500L * attempt
-                logger.warn("发送 HTTP 请求出现 IO 异常({})，将等待 {}ms 后继续重试", e.message, delayMs)
-                delay(delayMs)
-                continue
+                delay(retryDelay(retries))
+                retries++
             }
         }
     }
+
+    private fun retryDelay(retries: Int): Long =
+        (500L * (1L shl retries.coerceAtMost(6))).coerceAtMost(30_000L)
 
     override suspend fun getMe(): UserMe = executeRequest("GET", "/users/@me")
 
@@ -196,7 +199,7 @@ class QQBotHttpClient(
     }
 
     override suspend fun sendC2CStreamMessage(userOpenId: String, request: SendMessageRequest): MessageResult {
-        return executeRequest("POST", "/v2/users/$userOpenId/stream/messages", request)
+        return executeRequest("POST", "/v2/users/$userOpenId/stream_messages", request)
     }
 
     override suspend fun uploadC2CMedia(userOpenId: String, request: UploadMediaRequest): UploadMediaResponse {
@@ -216,12 +219,119 @@ class QQBotHttpClient(
     }
 
     override suspend fun getGroupBotState(groupOpenId: String): GroupBotState {
-        return executeRequest("GET", "/v2/groups/$groupOpenId/bot-state")
+        return executeRequest("GET", "/v2/groups/$groupOpenId/bot_state")
     }
 
     override suspend fun uploadGroupMedia(groupOpenId: String, request: UploadMediaRequest): UploadMediaResponse {
         return executeRequest("POST", "/v2/groups/$groupOpenId/files", request)
     }
+
+    override suspend fun generateShareLink(request: ShareLinkRequest): ShareLinkResponse =
+        executeRequest("POST", "/v2/generate_url_link", request)
+
+    override suspend fun getGroupMembers(groupOpenId: String, cursor: String?): GroupMemberPage =
+        executeRequest("GET", "/v2/groups/$groupOpenId/members", query = cursorQuery(cursor))
+
+    override suspend fun getGroupMember(groupOpenId: String, memberOpenId: String): GroupMemberDetail =
+        executeRequest("GET", "/v2/groups/$groupOpenId/members/$memberOpenId")
+
+    override suspend fun getGroupBlacklist(groupOpenId: String, cursor: String?, limit: Int?): BlacklistPage =
+        executeRequest("GET", "/v2/groups/$groupOpenId/member_blacklist", query = buildMap {
+            cursor?.let { put("cursor", it) }
+            limit?.let { put("limit", it.toString()) }
+        })
+
+    override suspend fun updateGroupBlacklist(groupOpenId: String, request: BlacklistOperationRequest): BlacklistOperationResponse =
+        executeRequest("POST", "/v2/groups/$groupOpenId/member_blacklist", request)
+
+    override suspend fun getRestrictChatSetting(groupOpenId: String): RestrictChatSetting =
+        executeRequest("GET", "/v2/groups/$groupOpenId/restrict_chat_setting")
+
+    override suspend fun updateRestrictChatSetting(groupOpenId: String, request: RestrictChatSettingRequest) {
+        executeRequest<Unit>("POST", "/v2/groups/$groupOpenId/restrict_chat_setting", request)
+    }
+
+    override suspend fun getJoinRequests(groupOpenId: String, cursor: String?, limit: Int?): JoinRequestPage =
+        executeRequest("GET", "/v2/groups/$groupOpenId/join_request_list", query = buildMap {
+            cursor?.let { put("cursor", it) }
+            limit?.let { put("limit", it.toString()) }
+        })
+
+    override suspend fun approveJoinRequest(groupOpenId: String, memberOpenId: String, request: ApproveJoinRequest) {
+        executeRequest<Unit>("POST", "/v2/groups/$groupOpenId/approval_join_request/$memberOpenId", request)
+    }
+
+    override suspend fun batchRemoveMembers(groupOpenId: String, request: BatchRemoveMembersRequest): BatchRemoveMembersResponse =
+        executeRequest("POST", "/v2/groups/$groupOpenId/batch_remove_members", request)
+
+    override suspend fun getJoinApprovalStrategies(cursor: String?, limit: Int?): JoinApprovalStrategyPage =
+        executeRequest("GET", "/v2/groups/join_approval_strategy", query = buildMap {
+            cursor?.let { put("cursor", it) }
+            limit?.let { put("limit", it.toString()) }
+        })
+
+    override suspend fun createJoinApprovalStrategy(request: CreateJoinApprovalStrategyRequest): CreateJoinApprovalStrategyResponse =
+        executeRequest("POST", "/v2/groups/join_approval_strategy", request)
+
+    override suspend fun updateJoinApprovalStrategy(strategyId: String, request: UpdateJoinApprovalStrategyRequest): UpdateJoinApprovalStrategyResponse =
+        executeRequest("PATCH", "/v2/groups/join_approval_strategy/$strategyId", request)
+
+    override suspend fun deleteJoinApprovalStrategy(strategyId: String) {
+        executeRequest<Unit>("DELETE", "/v2/groups/join_approval_strategy/$strategyId")
+    }
+
+    override suspend fun executeJoinApprovalStrategy(strategyId: String) {
+        executeRequest<Unit>("POST", "/v2/groups/join_approval_strategy/$strategyId/execute")
+    }
+
+    override suspend fun updateJoinApprovalWhitelist(strategyId: String, request: WhitelistUsersRequest): WhitelistUsersResponse =
+        executeRequest("POST", "/v2/groups/join_approval_strategy/$strategyId/whitelist_users", request)
+
+    override suspend fun getMenu(): MenuResponse = executeRequest("GET", "/v2/menu")
+
+    override suspend fun updateMenu(request: MenuRequest): MenuVersion =
+        executeRequest("PUT", "/v2/menu", request)
+
+    override suspend fun getPanels(scope: String, cursor: String?, limit: Int?): PanelPage =
+        executeRequest("GET", "/v2/panels", query = buildMap {
+            put("scope", scope)
+            cursor?.let { put("cursor", it) }
+            limit?.let { put("limit", it.toString()) }
+        })
+
+    override suspend fun createPanel(request: CreatePanelRequest): PanelId =
+        executeRequest("POST", "/v2/panels", request)
+
+    override suspend fun getPanel(panelId: String): PanelRecord =
+        executeRequest("GET", "/v2/panels/$panelId")
+
+    override suspend fun updatePanel(panelId: String, request: UpdatePanelRequest): MenuVersion =
+        executeRequest("PUT", "/v2/panels/$panelId", request)
+
+    override suspend fun updatePanelTargets(panelId: String, request: PanelTargetRequest) {
+        executeRequest<Unit>("PUT", "/v2/panels/$panelId/target", request)
+    }
+
+    override suspend fun deletePanel(panelId: String) {
+        executeRequest<Unit>("DELETE", "/v2/panels/$panelId")
+    }
+
+    override suspend fun prepareGroupUpload(groupOpenId: String, request: UploadPrepareRequest): UploadPrepareResponse =
+        executeRequest("POST", "/v2/groups/$groupOpenId/upload_prepare", request)
+
+    override suspend fun finishGroupUpload(groupOpenId: String, request: UploadPartFinishRequest) {
+        executeRequest<Unit>("POST", "/v2/groups/$groupOpenId/upload_part_finish", request)
+    }
+
+    override suspend fun prepareC2CUpload(userOpenId: String, request: UploadPrepareRequest): UploadPrepareResponse =
+        executeRequest("POST", "/v2/users/$userOpenId/upload_prepare", request)
+
+    override suspend fun finishC2CUpload(userOpenId: String, request: UploadPartFinishRequest) {
+        executeRequest<Unit>("POST", "/v2/users/$userOpenId/upload_part_finish", request)
+    }
+
+    private fun cursorQuery(cursor: String?): Map<String, String> =
+        cursor?.let { mapOf("cursor" to it) } ?: emptyMap()
 
     override suspend fun getGuild(guildId: String): Guild {
         return executeRequest("GET", "/guilds/$guildId")
@@ -248,7 +358,7 @@ class QQBotHttpClient(
     }
 
     override suspend fun putInteractionResponse(interactionId: String, request: InteractionResponseRequest) {
-        executeRequest<Unit>("PUT", "/v2/interactions/$interactionId", request)
+        executeRequest<Unit>("PUT", "/interactions/$interactionId", request)
     }
 
     override suspend fun getWssUrl(): WssUrlResponse {

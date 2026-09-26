@@ -10,6 +10,7 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerialName
@@ -40,6 +41,7 @@ internal data class TokenRequest(
 internal data class TokenResponse(
     @SerialName("access_token") val accessToken: String = "",
     @SerialName("expires_in") val expiresIn: Long = 7200,
+    @SerialName("code") val code: Int = 0,
     @SerialName("err_code") val errCode: Int = 0,
     val message: String = ""
 )
@@ -62,8 +64,10 @@ class AccessTokenManager(
     private val logger = LoggerFactory.getLogger(AccessTokenManager::class.java)
     private val mutex = Mutex()
 
+    @Volatile
     private var cachedToken: String? = null
     /** Token 预计过期的系统毫秒时间戳 */
+    @Volatile
     private var expireTimeMillis: Long = 0L
 
     /**
@@ -84,11 +88,16 @@ class AccessTokenManager(
      * @return 准备完毕可直接组合于 Authorization Header 中的有效凭证字串。
      * @throws QQBotAuthException 申请失败（如网络中断或 Secret 有误）时抛出。
      */
-    suspend fun getAccessToken(forceRefresh: Boolean = false): String {
+    suspend fun getAccessToken(forceRefresh: Boolean = false, rejectedToken: String? = null): String {
         if (!forceRefresh && isTokenValid) {
             return cachedToken!!
         }
         return mutex.withLock {
+            // Concurrent requests may all receive 401 for the same token. Only the first
+            // coroutine refreshes it; the rest reuse the replacement token.
+            if (forceRefresh && rejectedToken != null && cachedToken != null && cachedToken != rejectedToken) {
+                return@withLock cachedToken!!
+            }
             if (!forceRefresh && isTokenValid) {
                 return@withLock cachedToken!!
             }
@@ -124,12 +133,16 @@ class AccessTokenManager(
                 throw QQBotAuthException("获取 AccessToken 响应状态码非成功: httpStatus=${response.status.value}")
             }
             val body: TokenResponse = response.body()
-            if (body.errCode != 0 || body.accessToken.isBlank()) {
-                throw QQBotAuthException("获取 AccessToken 平台拒绝: errCode=${body.errCode}, message='${body.message}'")
+            val code = body.code.takeIf { it != 0 } ?: body.errCode
+            if (code != 0 || body.accessToken.isBlank() || body.expiresIn <= 0) {
+                throw QQBotAuthException("获取 AccessToken 平台拒绝: code=$code, message='${body.message}'")
             }
+            require(body.expiresIn <= Long.MAX_VALUE / 1000L) { "expires_in is too large" }
             expireTimeMillis = System.currentTimeMillis() + (body.expiresIn * 1000L)
             logger.info("成功获取 QQ 机器人 AccessToken, 有效期 {} 秒", body.expiresIn)
             return body.accessToken
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             if (e is QQBotAuthException) throw e
             throw QQBotAuthException("请求拉取 AccessToken 发生异常: ${e.message}", e)
