@@ -1,7 +1,9 @@
 package cn.qfys521.qqbot.event
 
 import cn.qfys521.qqbot.http.QQBotApi
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
@@ -231,6 +233,8 @@ class EventDispatcher(
                     is ChannelDeleteEvent -> channelDeleteListeners.forEach { safeInvoke { it(event) } }
                     is GenericEvent -> genericListeners.forEach { safeInvoke { it(event) } }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 logger.error("事件全局调度派发流程遭遇未预期异常: {}", e.message, e)
             }
@@ -240,8 +244,15 @@ class EventDispatcher(
     private inline fun safeInvoke(block: () -> Unit) {
         try {
             block()
+        } catch (t: CancellationException) {
+            throw t
         } catch (t: Throwable) {
             logger.error("在执行自定义具体事件回调监听期间发生异常, 已成功安全隔离: {}", t.message, t)
         }
+    }
+
+    /** Cancel pending listener callbacks when the owning bot is closed. */
+    fun close() {
+        scope.cancel()
     }
 }

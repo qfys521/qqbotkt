@@ -104,6 +104,7 @@ class QQBot(
      */
     override fun close() {
         stop()
+        eventDispatcher.close()
         try {
             httpClient.close()
         } catch (e: Exception) {

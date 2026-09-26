@@ -101,13 +101,23 @@ class QQBotGateway(
         if (isRunning.compareAndSet(true, false)) {
             logger.info("收到中止信号，准备正常终止断开 QQBotGateway 连接并释放协程资源...")
             heartbeatJob?.cancel()
-            gatewayScope.launch {
-                try {
-                    wsSession?.close(CloseReason(CloseReason.Codes.NORMAL, "Bot Stop"))
-                } catch (ignored: Exception) {
+            val scope = gatewayScope
+            val session = wsSession
+            if (session == null) {
+                scope.cancel()
+            } else {
+                scope.launch {
+                    try {
+                        session.close(CloseReason(CloseReason.Codes.NORMAL, "Bot Stop"))
+                    } catch (_: CancellationException) {
+                        // The caller may be closing the scope concurrently.
+                    } catch (ignored: Exception) {
+                        logger.debug("关闭 WebSocket 会话时发生异常: {}", ignored.message)
+                    } finally {
+                        scope.cancel()
+                    }
                 }
             }
-            gatewayScope.cancel()
         }
     }
 
@@ -118,6 +128,8 @@ class QQBotGateway(
                 // 1. 获取 WSS 网关接入地址
                 val wssInfo = try {
                     api.getWssBotUrl()
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     logger.debug("请求 /gateway/bot 接入点未成功，现降级请求普通 /gateway 通用端点...")
                     api.getWssUrl()
@@ -135,8 +147,14 @@ class QQBotGateway(
                     sessionLoop(session)
                 }
                 if (isRunning.get()) {
-                    logger.warn("与远端 WebSocket 网关会话断开/结束，3 秒后重新进入连接循环...")
-                    delay(3000L)
+                    if (!config.autoReconnect) {
+                        logger.info("autoReconnect=false，WebSocket 正常关闭后退出连接循环。")
+                        isRunning.set(false)
+                        break
+                    }
+                    logger.warn("与远端 WebSocket 网关会话断开/结束，稍后重新进入连接循环...")
+                    retryAttempt++
+                    delay((2000L * (1L shl (retryAttempt - 1).coerceAtMost(5))).coerceAtMost(60_000L))
                 }
 
             } catch (e: Exception) {
@@ -154,7 +172,7 @@ class QQBotGateway(
                 }
 
                 retryAttempt++
-                val backoffMs = (2000L * retryAttempt).coerceAtMost(60_000L)
+                val backoffMs = (2000L * (1L shl (retryAttempt - 1).coerceAtMost(5))).coerceAtMost(60_000L)
                 logger.warn("网关将在等待 {} 毫秒后尝试执行第 {} 次自动重连动作...", backoffMs, retryAttempt)
                 delay(backoffMs)
             }
@@ -244,6 +262,7 @@ class QQBotGateway(
                 }
             }
         } finally {
+            wsSession = null
             heartbeatJob?.cancel()
             heartbeatJob = null
         }
