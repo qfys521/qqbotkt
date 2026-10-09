@@ -38,7 +38,8 @@ data class Interaction(
     @SerialName("channel_id") val channelId: String? = null,
     val version: Int = 1,
     val timestamp: String? = null,
-    val data: InteractionData? = null
+    val data: InteractionData? = null,
+    @SerialName("group_member_openid") val groupMemberOpenId: String? = null
 )
 
 /**
@@ -48,7 +49,8 @@ data class Interaction(
  */
 @Serializable
 data class InteractionData(
-    val resolved: JsonElement? = null
+    val resolved: JsonElement? = null,
+    val type: Int? = null
 )
 
 /**

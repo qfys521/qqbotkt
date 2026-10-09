@@ -26,7 +26,8 @@ data class Guild(
     @SerialName("member_count") val memberCount: Int = 0,
     @SerialName("max_members") val maxMembers: Int = 0,
     val description: String? = null,
-    @SerialName("joined_at") val joinedAt: String? = null
+    @SerialName("joined_at") val joinedAt: String? = null,
+    @SerialName("op_user_id") val opUserId: String? = null
 )
 
 /**
@@ -50,7 +51,8 @@ data class Channel(
     @SerialName("sub_type") val subType: Int = 0,
     val position: Int = 0,
     @SerialName("parent_id") val parentId: String? = null,
-    @SerialName("owner_id") val ownerId: String? = null
+    @SerialName("owner_id") val ownerId: String? = null,
+    @SerialName("op_user_id") val opUserId: String? = null
 )
 
 /**

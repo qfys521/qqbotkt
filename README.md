@@ -14,7 +14,7 @@
 ### 2. 🔐 AccessToken 自动托管与并发保护 (AccessTokenManager)
 - **无感生命周期管理**：自动计算 `expires_in` 到期窗口，提前 **60 秒** 安全自动续期。
 - **协程锁 (Mutex) 双重检查**：若出现上百个并发请求同时遭遇 Token 过期，`Mutex` 保障**仅由第一个协程**发起 HTTPS 凭证更新，其余请求复用最新凭证，告别频繁触发鉴权错误。
-- **401/过期错误自动纠偏**：如果网络请求返回 Token 过期（如 `code/errcode = 11243` 或 HTTP 401），客户端会自动刷取最新 Token 并进行一次无感重试。
+- **401 自动纠偏**：如果网络请求返回没有非零业务错误码的 HTTP 401，客户端会自动刷新 Token 并进行一次无感重试；明确错误码（包括 `11243`）会保留给调用方处理。
 
 ### 3. 🛡️ 稳健的异常分层与智能重试机制 (QQBotException Hierarchy)
 - **分层明确**：
@@ -26,7 +26,7 @@
 - **全链路追踪 (TraceId)**：无论调用成功还是业务返回异常，均自动采集并在异常信息中附带官方 HTTP Response Header 的 `X-Tps-trace-ID`，协助排查平台报错。
 
 ### 4. 🌐 全功能 OpenAPI v2 高阶封装 (QQBotApi)
-- 覆盖单聊私信 (C2C)、群聊消息 (Group)、频道全量消息与公域 @ 消息、子频道 (Channel) 增删改查、群管理扩展接口（成员、黑名单、禁言、入群审批、菜单、指令面板、分片上传准备）以及互动交互回调应答 (Interaction)。
+- 覆盖 C2C/群聊消息、频道与子频道管理、成员/身份组/权限、消息与私信、表情回应、精华消息、日程、公告、论坛、音频及 API 权限，并支持群管理、入群审批、菜单、指令面板、分片上传和互动回调。
 - 内置方法重载与可选参数，无需繁琐构造大结构体即可快速发起发信命令。
 
 ### 5. 🔌 智能 WebSocket 网关 (QQBotGateway)
@@ -214,6 +214,6 @@ cn.qfys521.qqbot
 
 ## 📚 文档与官方参考资料
 
-- **[全量 API 开发速查手册 (API_REFERENCE.md)](API_REFERENCE.md)**：包含本 SDK 支持的全部 OpenAPI v2 HTTPS 接口、WebSocket 网关所有事件、DSL 语法规范及数据字典速查表。
+- **[SDK API 开发速查手册 (API_REFERENCE.md)](API_REFERENCE.md)**：包含当前已接入的 OpenAPI v2 HTTPS 接口、WebSocket 网关事件、DSL 语法规范及数据字典速查表。
 - [QQ 开放平台官方开发者文档](https://bot.q.qq.com/wiki)
 - 本仓库内置原始官方规范文档根目录：`tools/qq_bot_docs/`

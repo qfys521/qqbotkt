@@ -82,7 +82,7 @@ data class GuildItem(
     val name: String = "",
     val icon: String? = null,
     @SerialName("owner_id") val ownerId: String? = null,
-    @SerialName("is_owner") val isOwner: Boolean = false,
+    @SerialName("owner") val isOwner: Boolean = false,
     @SerialName("member_count") val memberCount: Int = 0,
     @SerialName("max_members") val maxMembers: Int = 0,
     val description: String? = null,

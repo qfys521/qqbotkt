@@ -1,5 +1,8 @@
 package cn.qfys521.qqbot.model.message
 
+import cn.qfys521.qqbot.model.api.ChannelMessageArk
+import cn.qfys521.qqbot.model.api.ChannelMessageEmbed
+import cn.qfys521.qqbot.model.api.GuildMember
 import cn.qfys521.qqbot.model.user.User
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -38,7 +41,19 @@ data class Message(
     val attachments: List<MessageAttachment>? = null,
     val mentions: List<User>? = null,
     @SerialName("ark_data") val arkData: ArkData? = null,
-    @SerialName("msg_elements") val msgElements: List<MsgElement>? = null
+    @SerialName("msg_elements") val msgElements: List<MsgElement>? = null,
+    @SerialName("edited_timestamp") val editedTimestamp: String? = null,
+    @SerialName("mention_everyone") val mentionEveryone: Boolean? = null,
+    val embeds: List<ChannelMessageEmbed>? = null,
+    val member: GuildMember? = null,
+    val ark: ChannelMessageArk? = null,
+    val seq: Long? = null,
+    @SerialName("seq_in_channel") val seqInChannel: String? = null,
+    @SerialName("message_reference") val messageReference: MessageReference? = null,
+    val pinned: Boolean? = null,
+    val tts: Boolean? = null,
+    val type: Int? = null,
+    val flags: Int? = null
 ) {
     /**
      * 快速将此消息转换为回复上下文引用实体 [MessageReference]。
@@ -156,6 +171,32 @@ data class SendMessageRequest(
     @SerialName("input_notify") val inputNotify: InputNotify? = null
 )
 
+@Serializable
+data class StreamMessageRequest(
+    @SerialName("input_mode") val inputMode: String? = null,
+    @SerialName("input_state") val inputState: Int? = null,
+    val index: Int? = null,
+    @SerialName("content_type") val contentType: String? = null,
+    @SerialName("content_raw") val contentRaw: String? = null,
+    @SerialName("event_id") val eventId: String? = null,
+    @SerialName("msg_id") val msgId: String? = null,
+    @SerialName("stream_msg_id") val streamMsgId: String? = null,
+    @SerialName("msg_seq") val msgSeq: Int? = null,
+    @SerialName("is_wakeup") val isWakeup: Boolean? = null
+) {
+    companion object {
+        fun from(request: SendMessageRequest): StreamMessageRequest = StreamMessageRequest(
+            inputState = 1,
+            contentType = if (request.msgType == 2) "markdown" else "text",
+            contentRaw = request.content ?: request.markdown?.content,
+            eventId = request.eventId,
+            msgId = request.msgId,
+            msgSeq = request.msgSeq,
+            isWakeup = request.isWakeup
+        )
+    }
+}
+
 /**
  * Markdown 格式文本内容声明实体。
  *
@@ -167,7 +208,15 @@ data class SendMessageRequest(
 data class MessageMarkdown(
     val content: String? = null,
     @SerialName("template_id") val templateId: Int? = null,
-    @SerialName("custom_template_id") val customTemplateId: String? = null
+    @SerialName("custom_template_id") val customTemplateId: String? = null,
+    val params: List<MessageMarkdownParam>? = null,
+    @SerialName("force_verify_image_resource") val forceVerifyImageResource: Boolean? = null
+)
+
+@Serializable
+data class MessageMarkdownParam(
+    val key: String? = null,
+    val values: List<String> = emptyList()
 )
 
 /**
@@ -213,7 +262,8 @@ data class Row(
 data class Button(
     val id: String? = null,
     @SerialName("render_data") val renderData: RenderData? = null,
-    val action: Action? = null
+    val action: Action? = null,
+    @SerialName("group_id") val groupId: String? = null
 )
 
 /**
@@ -243,7 +293,19 @@ data class Action(
     val type: Int = 0,
     val permission: Permission? = null,
     val data: String? = null,
-    @SerialName("unsupport_tips") val unsupportTips: String? = null
+    @SerialName("unsupport_tips") val unsupportTips: String? = null,
+    @SerialName("click_limit") val clickLimit: Int? = null,
+    val enter: Boolean? = null,
+    val reply: Boolean? = null,
+    val anchor: Int? = null,
+    val modal: Modal? = null
+)
+
+@Serializable
+data class Modal(
+    val content: String? = null,
+    @SerialName("confirm_text") val confirmText: String? = null,
+    @SerialName("cancel_text") val cancelText: String? = null
 )
 
 /**
@@ -303,8 +365,13 @@ data class MediaInfo(
 @Serializable
 data class MessageResult(
     val id: String? = null,
-    val timestamp: String? = null
+    val timestamp: String? = null,
+    @SerialName("ext_info") val extInfo: MessageExtInfo? = null,
+    @SerialName("remain_msg_len") val remainMsgLen: Int? = null
 )
+
+@Serializable
+data class MessageExtInfo(@SerialName("ref_idx") val refIdx: String? = null)
 
 /**
  * 机器人在特定群聊内的在线状态统计。

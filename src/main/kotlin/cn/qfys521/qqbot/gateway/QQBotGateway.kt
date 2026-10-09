@@ -5,6 +5,10 @@ import cn.qfys521.qqbot.config.QQBotConfig
 import cn.qfys521.qqbot.event.*
 import cn.qfys521.qqbot.exception.QQBotGatewayException
 import cn.qfys521.qqbot.http.QQBotApi
+import cn.qfys521.qqbot.model.api.GuildMemberWithGuildId
+import cn.qfys521.qqbot.model.api.MessageAudited
+import cn.qfys521.qqbot.model.api.MessageDelete
+import cn.qfys521.qqbot.model.api.MessageReaction
 import cn.qfys521.qqbot.model.common.OpCode
 import cn.qfys521.qqbot.model.guild.Channel
 import cn.qfys521.qqbot.model.guild.Guild
@@ -16,10 +20,18 @@ import io.ktor.client.plugins.websocket.*
 import io.ktor.client.request.url
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel as CoroutineChannel
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -57,18 +69,24 @@ class QQBotGateway(
             ignoreUnknownKeys = true
             isLenient = true
             encodeDefaults = true
+            explicitNulls = false
         }
     }
 
     private val isRunning = AtomicBoolean(false)
     private var gatewayScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private var connectionJob: Job? = null
     private var heartbeatJob: Job? = null
     private var wsSession: DefaultClientWebSocketSession? = null
 
     /** 缓存当前连接成功的 Session ID，主要用于断开连接时的会话续订及网络层恢复。 */
     private var cachedSessionId: String? = null
     /** 记录由平台推送过来的最近下行报文的有效数字序号 `s`。 */
+    @Volatile
     private var latestSeq: Long? = null
+    private var reconnectAction = ReconnectAction.AUTO
+
+    private enum class ReconnectAction { AUTO, IDENTIFY, RESUME }
 
     /**
      * 以全异步且不挂断调用者工作线程的方式向平台网关启动监听循环。
@@ -79,7 +97,7 @@ class QQBotGateway(
             return
         }
         gatewayScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        gatewayScope.launch {
+        connectionJob = gatewayScope.launch {
             connectionLoop()
         }
     }
@@ -114,6 +132,13 @@ class QQBotGateway(
                     } catch (ignored: Exception) {
                         logger.debug("关闭 WebSocket 会话时发生异常: {}", ignored.message)
                     } finally {
+                        val drained = withTimeoutOrNull(5_000L) {
+                            connectionJob?.join()
+                            true
+                        } ?: false
+                        if (!drained) {
+                            logger.warn("等待网关事件队列排空超时，取消剩余连接任务。")
+                        }
                         scope.cancel()
                     }
                 }
@@ -142,7 +167,6 @@ class QQBotGateway(
                     url(wssUrl)
                 }.let { session ->
                     wsSession = session
-                    retryAttempt = 0
                     logger.info("与网关服务器建立 TCP/TLS 通讯成功，当前等待服务端发送 OpCode 10 Hello...")
                     sessionLoop(session)
                 }
@@ -180,6 +204,17 @@ class QQBotGateway(
     }
 
     private suspend fun sessionLoop(session: DefaultClientWebSocketSession) {
+        val dispatchQueue = CoroutineChannel<GatewayPayload>(CoroutineChannel.UNLIMITED)
+        val dispatchJob = gatewayScope.launch {
+            var canAdvanceSequence = true
+            for (dispatch in dispatchQueue) {
+                val handled = handleDispatchEvent(dispatch)
+                if (!handled) canAdvanceSequence = false
+                if (handled && canAdvanceSequence) {
+                    dispatch.s?.let { latestSeq = it }
+                }
+            }
+        }
         try {
             for (frame in session.incoming) {
                 if (frame !is Frame.Text) continue
@@ -191,10 +226,6 @@ class QQBotGateway(
                     continue
                 }
 
-                if (payload.s != null) {
-                    latestSeq = payload.s
-                }
-
                 when (payload.op) {
                     OpCode.HELLO -> {
                         val helloData = payload.d?.let { json.decodeFromJsonElement<HelloData>(it) }
@@ -203,13 +234,18 @@ class QQBotGateway(
                         logger.info("已接到 Hello (op=10), 心跳发送间隔要求: {} ms", interval)
                         startHeartbeatLoop(session, interval)
 
-                        if (cachedSessionId != null && latestSeq != null) {
+                        val shouldResume = reconnectAction == ReconnectAction.RESUME ||
+                            (reconnectAction == ReconnectAction.AUTO && cachedSessionId != null && latestSeq != null)
+                        if (shouldResume && cachedSessionId != null && latestSeq != null) {
                             logger.info("检测到缓存会话 SessionId ({}) 与已追溯序列号 ({}) 依然完好，尝试发出 Resume (op=6)...", cachedSessionId, latestSeq)
                             sendResume(session)
                         } else {
+                            cachedSessionId = null
+                            latestSeq = null
                             logger.info("未发现可复用的上期有效凭靠，开始正式提交 Identify (op=2) 进行新鉴权...")
                             sendIdentify(session)
                         }
+                        reconnectAction = ReconnectAction.AUTO
                     }
 
                     OpCode.HEARTBEAT_ACK -> {
@@ -233,9 +269,7 @@ class QQBotGateway(
                         sendIdentify(session)
                     }
 
-                    OpCode.DISPATCH -> {
-                        handleDispatchEvent(payload)
-                    }
+                    OpCode.DISPATCH -> dispatchQueue.send(payload)
 
                     else -> {
                         logger.debug("捕获到其它未特异分派的 OpCode={} 数据类型: {}", payload.op, payload.t)
@@ -245,6 +279,7 @@ class QQBotGateway(
             val reason = session.closeReason.await()
             if (reason != null) {
                 logger.warn("WebSocket 官方网关连接已关闭/中断: code={}, message='{}'", reason.code, reason.message)
+                updateReconnectAction(reason.code.toInt())
                 when (reason.code) {
                     4014.toShort() -> {
                         logger.error("❌ [错误 4014 Disallowed Intent]: 当前请求的 intents ({}) 包含了未在 QQ 机器人后台启用的事件权限！", config.intents)
@@ -262,9 +297,38 @@ class QQBotGateway(
                 }
             }
         } finally {
+            dispatchQueue.close()
             wsSession = null
             heartbeatJob?.cancel()
             heartbeatJob = null
+            dispatchJob.join()
+        }
+    }
+
+    private fun updateReconnectAction(code: Int) {
+        when (code) {
+            4006, 4007 -> {
+                cachedSessionId = null
+                latestSeq = null
+                reconnectAction = ReconnectAction.IDENTIFY
+            }
+            4008, 4009 -> {
+                reconnectAction = if (cachedSessionId != null && latestSeq != null) {
+                    ReconnectAction.RESUME
+                } else {
+                    ReconnectAction.IDENTIFY
+                }
+            }
+            in 4900..4913 -> {
+                cachedSessionId = null
+                latestSeq = null
+                reconnectAction = ReconnectAction.IDENTIFY
+            }
+            4001, 4002, 4004, in 4010..4014, 4914, 4915 -> {
+                logger.error("网关关闭码 {} 表示当前连接配置或凭证不可恢复，停止自动重连。", code)
+                isRunning.set(false)
+            }
+            else -> reconnectAction = ReconnectAction.AUTO
         }
     }
 
@@ -319,9 +383,10 @@ class QQBotGateway(
         session.send(Frame.Text(text))
     }
 
-    private fun handleDispatchEvent(payload: GatewayPayload) {
-        val eventType = payload.t ?: return
+    private suspend fun handleDispatchEvent(payload: GatewayPayload): Boolean {
+        val eventType = payload.t ?: return false
         val rawJson = payload.d?.toString()
+        suspend fun dispatch(event: BotEvent) = eventDispatcher.dispatchAndAwait(event)
 
         try {
             when (eventType) {
@@ -329,85 +394,349 @@ class QQBotGateway(
                     val readyData = payload.d?.let { json.decodeFromJsonElement<ReadyData>(it) } ?: ReadyData()
                     cachedSessionId = readyData.sessionId
                     logger.info("网关 READY！恭喜机器人连接鉴权成功，当前登录昵称: {}, 凭依 SessionId: {}", readyData.user.username, readyData.sessionId)
-                    eventDispatcher.dispatch(ReadyEvent(readyData, payload.id, payload.s?.toString(), rawJson))
+                    dispatch(ReadyEvent(readyData, payload.id, payload.s?.toString(), rawJson))
                 }
 
                 "RESUMED" -> {
                     logger.info("会话续订确认成功 (RESUMED)！一切既往连接上下文完全恢复，无缝运行中！")
-                    eventDispatcher.dispatch(ResumedEvent(payload.id, payload.s?.toString(), rawJson))
+                    dispatch(ResumedEvent(payload.id, payload.s?.toString(), rawJson))
                 }
 
                 "GROUP_MESSAGE_CREATE" -> {
-                    val message = payload.d?.let { json.decodeFromJsonElement<Message>(it) } ?: return
-                    eventDispatcher.dispatch(GroupMessageEvent(message, payload.id, payload.s?.toString(), rawJson))
+                    val message = payload.d?.let { json.decodeFromJsonElement<Message>(it) } ?: return false
+                    dispatch(GroupMessageEvent(message, payload.id, payload.s?.toString(), rawJson))
                 }
 
                 "GROUP_AT_MESSAGE_CREATE" -> {
-                    val message = payload.d?.let { json.decodeFromJsonElement<Message>(it) } ?: return
-                    eventDispatcher.dispatch(GroupAtMessageEvent(message, payload.id, payload.s?.toString(), rawJson))
+                    val message = payload.d?.let { json.decodeFromJsonElement<Message>(it) } ?: return false
+                    dispatch(GroupAtMessageEvent(message, payload.id, payload.s?.toString(), rawJson))
                 }
 
                 "C2C_MESSAGE_CREATE" -> {
-                    val message = payload.d?.let { json.decodeFromJsonElement<Message>(it) } ?: return
-                    eventDispatcher.dispatch(C2CMessageEvent(message, payload.id, payload.s?.toString(), rawJson))
+                    val message = payload.d?.let { json.decodeFromJsonElement<Message>(it) } ?: return false
+                    dispatch(C2CMessageEvent(message, payload.id, payload.s?.toString(), rawJson))
                 }
 
                 "AT_MESSAGE_CREATE" -> {
-                    val message = payload.d?.let { json.decodeFromJsonElement<Message>(it) } ?: return
-                    eventDispatcher.dispatch(GuildAtMessageEvent(message, payload.id, payload.s?.toString(), rawJson))
+                    val message = payload.d?.let { json.decodeFromJsonElement<Message>(it) } ?: return false
+                    dispatch(GuildAtMessageEvent(message, payload.id, payload.s?.toString(), rawJson))
                 }
 
                 "MESSAGE_CREATE" -> {
-                    val message = payload.d?.let { json.decodeFromJsonElement<Message>(it) } ?: return
-                    eventDispatcher.dispatch(GuildMessageEvent(message, payload.id, payload.s?.toString(), rawJson))
+                    val message = payload.d?.let { json.decodeFromJsonElement<Message>(it) } ?: return false
+                    dispatch(GuildMessageEvent(message, payload.id, payload.s?.toString(), rawJson))
+                }
+
+                "MESSAGE_DELETE" -> {
+                    val deleted = payload.d?.let { json.decodeFromJsonElement<MessageDelete>(it) } ?: return false
+                    dispatch(MessageDeleteEvent(deleted, payload.id, payload.s?.toString(), rawJson))
+                }
+
+                "PUBLIC_MESSAGE_DELETE" -> {
+                    val deleted = payload.d?.let { json.decodeFromJsonElement<MessageDelete>(it) } ?: return false
+                    dispatch(PublicMessageDeleteEvent(deleted, payload.id, payload.s?.toString(), rawJson))
                 }
 
                 "DIRECT_MESSAGE_CREATE" -> {
-                    val message = payload.d?.let { json.decodeFromJsonElement<Message>(it) } ?: return
-                    eventDispatcher.dispatch(DirectMessageEvent(message, payload.id, payload.s?.toString(), rawJson))
+                    val message = payload.d?.let { json.decodeFromJsonElement<Message>(it) } ?: return false
+                    dispatch(DirectMessageEvent(message, payload.id, payload.s?.toString(), rawJson))
+                }
+
+                "DIRECT_MESSAGE_DELETE" -> {
+                    val deleted = payload.d?.let { json.decodeFromJsonElement<MessageDelete>(it) } ?: return false
+                    dispatch(DirectMessageDeleteEvent(deleted, payload.id, payload.s?.toString(), rawJson))
                 }
 
                 "INTERACTION_CREATE" -> {
-                    val interaction = payload.d?.let { json.decodeFromJsonElement<Interaction>(it) } ?: return
-                    eventDispatcher.dispatch(InteractionCreateEvent(interaction, payload.id, payload.s?.toString(), rawJson))
+                    val interaction = payload.d?.let { json.decodeFromJsonElement<Interaction>(it) } ?: return false
+                    dispatch(InteractionCreateEvent(interaction, payload.id, payload.s?.toString(), rawJson))
                 }
 
                 "GUILD_CREATE" -> {
-                    val guild = payload.d?.let { json.decodeFromJsonElement<Guild>(it) } ?: return
-                    eventDispatcher.dispatch(GuildCreateEvent(guild, payload.id, payload.s?.toString(), rawJson))
+                    val guild = payload.d?.let { json.decodeFromJsonElement<Guild>(it) } ?: return false
+                    dispatch(GuildCreateEvent(guild, payload.id, payload.s?.toString(), rawJson))
                 }
 
                 "GUILD_UPDATE" -> {
-                    val guild = payload.d?.let { json.decodeFromJsonElement<Guild>(it) } ?: return
-                    eventDispatcher.dispatch(GuildUpdateEvent(guild, payload.id, payload.s?.toString(), rawJson))
+                    val guild = payload.d?.let { json.decodeFromJsonElement<Guild>(it) } ?: return false
+                    dispatch(GuildUpdateEvent(guild, payload.id, payload.s?.toString(), rawJson))
                 }
 
                 "GUILD_DELETE" -> {
-                    val guild = payload.d?.let { json.decodeFromJsonElement<Guild>(it) } ?: return
-                    eventDispatcher.dispatch(GuildDeleteEvent(guild, payload.id, payload.s?.toString(), rawJson))
+                    val guild = payload.d?.let { json.decodeFromJsonElement<Guild>(it) } ?: return false
+                    dispatch(GuildDeleteEvent(guild, payload.id, payload.s?.toString(), rawJson))
+                }
+
+                "GUILD_MEMBER_ADD", "GUILD_MEMBER_UPDATE", "GUILD_MEMBER_REMOVE" -> {
+                    val member = payload.d?.let { json.decodeFromJsonElement<GuildMemberWithGuildId>(it) } ?: return false
+                    when (eventType) {
+                        "GUILD_MEMBER_ADD" -> dispatch(GuildMemberAddEvent(member, payload.id, payload.s?.toString(), rawJson))
+                        "GUILD_MEMBER_UPDATE" -> dispatch(GuildMemberUpdateEvent(member, payload.id, payload.s?.toString(), rawJson))
+                        else -> dispatch(GuildMemberRemoveEvent(member, payload.id, payload.s?.toString(), rawJson))
+                    }
                 }
 
                 "CHANNEL_CREATE" -> {
-                    val channel = payload.d?.let { json.decodeFromJsonElement<Channel>(it) } ?: return
-                    eventDispatcher.dispatch(ChannelCreateEvent(channel, payload.id, payload.s?.toString(), rawJson))
+                    val channel = payload.d?.let { json.decodeFromJsonElement<Channel>(it) } ?: return false
+                    dispatch(ChannelCreateEvent(channel, payload.id, payload.s?.toString(), rawJson))
                 }
 
                 "CHANNEL_UPDATE" -> {
-                    val channel = payload.d?.let { json.decodeFromJsonElement<Channel>(it) } ?: return
-                    eventDispatcher.dispatch(ChannelUpdateEvent(channel, payload.id, payload.s?.toString(), rawJson))
+                    val channel = payload.d?.let { json.decodeFromJsonElement<Channel>(it) } ?: return false
+                    dispatch(ChannelUpdateEvent(channel, payload.id, payload.s?.toString(), rawJson))
                 }
 
                 "CHANNEL_DELETE" -> {
-                    val channel = payload.d?.let { json.decodeFromJsonElement<Channel>(it) } ?: return
-                    eventDispatcher.dispatch(ChannelDeleteEvent(channel, payload.id, payload.s?.toString(), rawJson))
+                    val channel = payload.d?.let { json.decodeFromJsonElement<Channel>(it) } ?: return false
+                    dispatch(ChannelDeleteEvent(channel, payload.id, payload.s?.toString(), rawJson))
+                }
+
+                "MESSAGE_REACTION_ADD", "MESSAGE_REACTION_REMOVE" -> {
+                    val reaction = payload.d?.let { json.decodeFromJsonElement<MessageReaction>(it) } ?: return false
+                    if (eventType == "MESSAGE_REACTION_ADD") {
+                        dispatch(MessageReactionAddEvent(reaction, payload.d, payload.id, payload.s?.toString(), rawJson))
+                    } else {
+                        dispatch(MessageReactionRemoveEvent(reaction, payload.d, payload.id, payload.s?.toString(), rawJson))
+                    }
+                }
+
+                "MESSAGE_AUDIT_PASS", "MESSAGE_AUDIT_REJECT" -> {
+                    val audited = payload.d?.let { json.decodeFromJsonElement<MessageAudited>(it) } ?: return false
+                    if (eventType == "MESSAGE_AUDIT_PASS") {
+                        dispatch(MessageAuditPassEvent(audited, payload.d, payload.id, payload.s?.toString(), rawJson))
+                    } else {
+                        dispatch(MessageAuditRejectEvent(audited, payload.d, payload.id, payload.s?.toString(), rawJson))
+                    }
+                }
+
+                "FORUM_THREAD_CREATE", "FORUM_THREAD_UPDATE", "FORUM_THREAD_DELETE" -> {
+                    val data = payload.d as? JsonObject ?: return false
+                    fun text(name: String) = data[name]?.jsonPrimitive?.contentOrNull
+                    val guildId = text("guild_id")
+                    val channelId = text("channel_id")
+                    val authorId = text("author_id")
+                    val threadInfo = data["thread_info"]
+                    when (eventType) {
+                        "FORUM_THREAD_CREATE" -> dispatch(ForumThreadCreateEvent(guildId, channelId, authorId, threadInfo, payload.id, payload.s?.toString(), rawJson))
+                        "FORUM_THREAD_UPDATE" -> dispatch(ForumThreadUpdateEvent(guildId, channelId, authorId, threadInfo, payload.id, payload.s?.toString(), rawJson))
+                        else -> dispatch(ForumThreadDeleteEvent(guildId, channelId, authorId, threadInfo, payload.id, payload.s?.toString(), rawJson))
+                    }
+                }
+
+                "FORUM_POST_CREATE", "FORUM_POST_DELETE" -> {
+                    val data = payload.d as? JsonObject ?: return false
+                    fun text(name: String) = data[name]?.jsonPrimitive?.contentOrNull
+                    val guildId = text("guild_id")
+                    val channelId = text("channel_id")
+                    val authorId = text("author_id")
+                    val postInfo = data["post_info"]
+                    if (eventType == "FORUM_POST_CREATE") {
+                        dispatch(ForumPostCreateEvent(guildId, channelId, authorId, postInfo, payload.id, payload.s?.toString(), rawJson))
+                    } else {
+                        dispatch(ForumPostDeleteEvent(guildId, channelId, authorId, postInfo, payload.id, payload.s?.toString(), rawJson))
+                    }
+                }
+
+                "FORUM_REPLY_CREATE", "FORUM_REPLY_DELETE" -> {
+                    val data = payload.d as? JsonObject ?: return false
+                    fun text(name: String) = data[name]?.jsonPrimitive?.contentOrNull
+                    val guildId = text("guild_id")
+                    val channelId = text("channel_id")
+                    val authorId = text("author_id")
+                    val replyInfo = data["reply_info"]
+                    if (eventType == "FORUM_REPLY_CREATE") {
+                        dispatch(ForumReplyCreateEvent(guildId, channelId, authorId, replyInfo, payload.id, payload.s?.toString(), rawJson))
+                    } else {
+                        dispatch(ForumReplyDeleteEvent(guildId, channelId, authorId, replyInfo, payload.id, payload.s?.toString(), rawJson))
+                    }
+                }
+
+                "FORUM_PUBLISH_AUDIT_RESULT" -> {
+                    val data = payload.d as? JsonObject ?: return false
+                    fun text(name: String) = data[name]?.jsonPrimitive?.contentOrNull
+                    dispatch(
+                        ForumPublishAuditResultEvent(
+                            guildId = text("guild_id"),
+                            channelId = text("channel_id"),
+                            authorId = text("author_id"),
+                            type = data["type"]?.jsonPrimitive?.intOrNull,
+                            result = data["result"]?.jsonPrimitive?.intOrNull,
+                            errMsg = text("err_msg"),
+                            threadId = text("thread_id"),
+                            postId = text("post_id"),
+                            replyId = text("reply_id"),
+                            payload = payload.d,
+                            eventId = payload.id,
+                            timestamp = payload.s?.toString(),
+                            rawJson = rawJson
+                        )
+                    )
+                }
+
+                "GROUP_ADD_ROBOT", "GROUP_DEL_ROBOT" -> {
+                    val data = payload.d as? JsonObject ?: return false
+                    fun text(name: String) = data[name]?.jsonPrimitive?.contentOrNull
+                    val groupOpenId = text("group_openid") ?: ""
+                    val operatorOpenId = text("op_member_openid") ?: ""
+                    val occurredAt = data["timestamp"]?.jsonPrimitive?.longOrNull
+                    if (eventType == "GROUP_ADD_ROBOT") {
+                        dispatch(GroupAddRobotEvent(groupOpenId, operatorOpenId, occurredAt, payload.id, payload.s?.toString(), rawJson))
+                    } else {
+                        dispatch(GroupDelRobotEvent(groupOpenId, operatorOpenId, occurredAt, payload.id, payload.s?.toString(), rawJson))
+                    }
+                }
+
+                "AUDIO_OR_LIVE_CHANNEL_MEMBER_ENTER", "AUDIO_OR_LIVE_CHANNEL_MEMBER_EXIT" -> {
+                    val data = payload.d as? JsonObject ?: return false
+                    fun text(name: String) = data[name]?.jsonPrimitive?.contentOrNull
+                    val guildId = text("guild_id")
+                    val channelId = text("channel_id")
+                    val channelType = data["channel_type"]?.jsonPrimitive?.intOrNull
+                    val userId = text("user_id")
+                    if (eventType == "AUDIO_OR_LIVE_CHANNEL_MEMBER_ENTER") {
+                        dispatch(AudioOrLiveChannelMemberEnterEvent(guildId, channelId, channelType, userId, payload.d, payload.id, payload.s?.toString(), rawJson))
+                    } else {
+                        dispatch(AudioOrLiveChannelMemberExitEvent(guildId, channelId, channelType, userId, payload.d, payload.id, payload.s?.toString(), rawJson))
+                    }
+                }
+
+                "AUDIO_START" -> dispatch(AudioStartEvent(payload.d, payload.id, payload.s?.toString(), rawJson))
+                "AUDIO_FINISH" -> dispatch(AudioFinishEvent(payload.d, payload.id, payload.s?.toString(), rawJson))
+                "AUDIO_ON_MIC" -> dispatch(AudioOnMicEvent(payload.d, payload.id, payload.s?.toString(), rawJson))
+                "AUDIO_OFF_MIC" -> dispatch(AudioOffMicEvent(payload.d, payload.id, payload.s?.toString(), rawJson))
+
+                "GROUP_JOIN_REQUEST" -> {
+                    val data = payload.d as? JsonObject ?: return false
+                    fun text(name: String) = (data[name] as? JsonPrimitive)?.contentOrNull
+                    val event = GroupJoinRequestEvent(
+                        groupOpenId = text("group_openid") ?: "",
+                        joinRequestId = text("join_request_id") ?: "",
+                        memberOpenId = text("member_openid") ?: "",
+                        riskTips = text("risk_tips"),
+                        unionOpenId = text("union_openid"),
+                        username = text("username"),
+                        applyAt = text("apply_at"),
+                        applySource = text("apply_source"),
+                        invitedBy = text("invited_by"),
+                        bot = data["bot"]?.jsonPrimitive?.booleanOrNull,
+                        verifyInfo = data["verify_info"],
+                        autoApproved = data["auto_approved"],
+                        eventId = payload.id,
+                        timestamp = payload.s?.toString(),
+                        rawJson = rawJson
+                    )
+                    dispatch(event)
+                }
+
+                "GROUP_MEMBER_ADD" -> {
+                    val data = payload.d as? JsonObject ?: return false
+                    fun text(name: String) = (data[name] as? JsonPrimitive)?.contentOrNull
+                    dispatch(
+                        GroupMemberAddEvent(
+                            groupOpenId = text("group_openid") ?: "",
+                            memberOpenId = text("member_openid") ?: "",
+                            userOpenId = text("user_openid"),
+                            occurredAt = data["timestamp"]?.jsonPrimitive?.longOrNull,
+                            eventId = payload.id,
+                            timestamp = payload.s?.toString(),
+                            rawJson = rawJson
+                        )
+                    )
+                }
+
+                "GROUP_MEMBER_REMOVE" -> {
+                    val data = payload.d as? JsonObject ?: return false
+                    fun text(name: String) = (data[name] as? JsonPrimitive)?.contentOrNull
+                    dispatch(
+                        GroupMemberRemoveEvent(
+                            groupOpenId = text("group_openid") ?: "",
+                            memberOpenId = text("member_openid") ?: "",
+                            userOpenId = text("user_openid"),
+                            occurredAt = data["timestamp"]?.jsonPrimitive?.longOrNull,
+                            eventId = payload.id,
+                            timestamp = payload.s?.toString(),
+                            rawJson = rawJson
+                        )
+                    )
+                }
+
+                "FRIEND_ADD" -> {
+                    val data = payload.d as? JsonObject ?: return false
+                    fun text(name: String) = (data[name] as? JsonPrimitive)?.contentOrNull
+                    dispatch(
+                        FriendAddEvent(
+                            openId = text("openid") ?: "",
+                            occurredAt = data["timestamp"]?.jsonPrimitive?.longOrNull,
+                            scene = data["scene"]?.jsonPrimitive?.intOrNull,
+                            sceneParam = text("scene_param"),
+                            author = data["author"],
+                            shortCode = text("short_code"),
+                            eventId = payload.id,
+                            timestamp = payload.s?.toString(),
+                            rawJson = rawJson
+                        )
+                    )
+                }
+
+                "FRIEND_DEL" -> {
+                    val data = payload.d as? JsonObject ?: return false
+                    fun text(name: String) = (data[name] as? JsonPrimitive)?.contentOrNull
+                    dispatch(
+                        FriendDelEvent(
+                            openId = text("openid") ?: "",
+                            occurredAt = data["timestamp"]?.jsonPrimitive?.longOrNull,
+                            author = data["author"],
+                            eventId = payload.id,
+                            timestamp = payload.s?.toString(),
+                            rawJson = rawJson
+                        )
+                    )
+                }
+
+                "GROUP_MSG_RECEIVE", "GROUP_MSG_REJECT" -> {
+                    val data = payload.d as? JsonObject ?: return false
+                    fun text(name: String) = (data[name] as? JsonPrimitive)?.contentOrNull
+                    val eventId = payload.id
+                    val sequence = payload.s?.toString()
+                    val timestamp = data["timestamp"]?.jsonPrimitive?.longOrNull
+                    val groupOpenId = text("group_openid") ?: ""
+                    val operatorOpenId = text("op_member_openid") ?: ""
+                    if (eventType == "GROUP_MSG_RECEIVE") {
+                        dispatch(
+                            GroupMsgReceiveEvent(groupOpenId, operatorOpenId, timestamp, eventId, sequence, rawJson)
+                        )
+                    } else {
+                        dispatch(
+                            GroupMsgRejectEvent(groupOpenId, operatorOpenId, timestamp, eventId, sequence, rawJson)
+                        )
+                    }
+                }
+
+                "C2C_MSG_RECEIVE", "C2C_MSG_REJECT" -> {
+                    val data = payload.d as? JsonObject ?: return false
+                    val openId = (data["openid"] as? JsonPrimitive)?.contentOrNull ?: ""
+                    val timestamp = data["timestamp"]?.jsonPrimitive?.longOrNull
+                    if (eventType == "C2C_MSG_RECEIVE") {
+                        dispatch(
+                            C2CMsgReceiveEvent(openId, timestamp, payload.id, payload.s?.toString(), rawJson)
+                        )
+                    } else {
+                        dispatch(
+                            C2CMsgRejectEvent(openId, timestamp, payload.id, payload.s?.toString(), rawJson)
+                        )
+                    }
                 }
 
                 else -> {
-                    eventDispatcher.dispatch(GenericEvent(eventType, payload.d, payload.id, payload.s?.toString(), rawJson))
+                    dispatch(GenericEvent(eventType, payload.d, payload.id, payload.s?.toString(), rawJson))
                 }
             }
+            return true
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             logger.error("反序列化且派发处理事件分类 {} 出错: {}", eventType, e.message, e)
+            return false
         }
     }
 }

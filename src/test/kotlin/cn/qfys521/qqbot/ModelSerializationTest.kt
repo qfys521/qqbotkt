@@ -3,8 +3,19 @@ package cn.qfys521.qqbot
 import cn.qfys521.qqbot.gateway.QQBotGateway
 import cn.qfys521.qqbot.model.gateway.GatewayPayload
 import cn.qfys521.qqbot.model.gateway.HelloData
+import cn.qfys521.qqbot.model.api.GuildMemberWithGuildId
+import cn.qfys521.qqbot.model.api.MessageAudited
+import cn.qfys521.qqbot.model.api.MessageDelete
+import cn.qfys521.qqbot.model.api.MessageReaction
+import cn.qfys521.qqbot.model.guild.Channel
+import cn.qfys521.qqbot.model.guild.Guild
+import cn.qfys521.qqbot.model.interaction.Interaction
 import cn.qfys521.qqbot.model.message.Message
+import cn.qfys521.qqbot.model.message.MessageMarkdown
+import cn.qfys521.qqbot.model.message.MessageMarkdownParam
 import cn.qfys521.qqbot.model.message.SendMessageRequest
+import cn.qfys521.qqbot.model.message.StreamMessageRequest
+import cn.qfys521.qqbot.model.user.GuildItem
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.decodeFromJsonElement
 import org.junit.jupiter.api.Test
@@ -83,5 +94,73 @@ class ModelSerializationTest {
         assertTrue(serialized.contains("\"msg_type\":0"))
         assertTrue(serialized.contains("\"msg_id\":\"msg_123\""))
         assertTrue(serialized.contains("\"msg_seq\":1"))
+    }
+
+    @Test
+    fun documentedGuildOwnerAndStreamRequestFieldsAreMapped() {
+        val guild = json.decodeFromString<GuildItem>("""{"id":"g1","owner":true}""")
+        assertTrue(guild.isOwner)
+
+        val serialized = json.encodeToString(
+            StreamMessageRequest(inputMode = "replace", inputState = 10, index = 2, contentType = "markdown", contentRaw = "done")
+        )
+        assertTrue(serialized.contains("\"input_mode\":\"replace\""))
+        assertTrue(serialized.contains("\"input_state\":10"))
+        assertTrue(serialized.contains("\"content_raw\":\"done\""))
+        assertTrue(!serialized.contains("null"))
+    }
+
+    @Test
+    fun documentedEventPayloadFieldsAreRetained() {
+        val guild = json.decodeFromString<Guild>("""{"id":"g1","op_user_id":"operator"}""")
+        val channel = json.decodeFromString<Channel>("""{"id":"c1","guild_id":"g1","op_user_id":"operator"}""")
+        val member = json.decodeFromString<GuildMemberWithGuildId>("""{"guild_id":"g1","op_user_id":"operator","user":{"id":"u1"}}""")
+        val interaction = json.decodeFromString<Interaction>(
+            """{"type":11,"group_member_openid":"member-1","data":{"type":11,"resolved":{"button_id":"b1"}}}"""
+        )
+        val message = json.decodeFromString<Message>(
+            """{"id":"m1","edited_timestamp":"2026-01-02T03:04:05Z","mention_everyone":true,"embeds":[{"title":"title"}],"member":{"nick":"nick"},"seq":7,"seq_in_channel":"8","message_reference":{"message_id":"m0"}}"""
+        )
+        val reaction = json.decodeFromString<MessageReaction>(
+            """{"user_id":"u1","target":{"id":"m1","type":0},"emoji":{"id":"277","type":1}}"""
+        )
+        val deleted = json.decodeFromString<MessageDelete>(
+            """{"message":{"id":"m1"},"op_user":{"id":"u1"}}"""
+        )
+        val audited = json.decodeFromString<MessageAudited>(
+            """{"audit_id":"a1","message_id":"m1","seq_in_channel":"8"}"""
+        )
+
+        assertEquals("operator", guild.opUserId)
+        assertEquals("operator", channel.opUserId)
+        assertEquals("operator", member.opUserId)
+        assertEquals("member-1", interaction.groupMemberOpenId)
+        assertEquals(11, interaction.data?.type)
+        assertTrue(interaction.data?.resolved.toString().contains("\"button_id\":\"b1\""))
+        assertTrue(message.mentionEveryone == true)
+        assertEquals("title", message.embeds?.firstOrNull()?.title)
+        assertEquals("nick", message.member?.nick)
+        assertEquals(7L, message.seq)
+        assertEquals("8", message.seqInChannel)
+        assertEquals("m0", message.messageReference?.messageId)
+        assertEquals("\"277\"", reaction.emoji?.id.toString())
+        assertEquals("u1", deleted.opUser?.id)
+        assertEquals("8", audited.seqInChannel)
+    }
+
+    @Test
+    fun markdownModelSupportsTemplatesWithoutEmittingConflictingEmptyParams() {
+        val rawMarkdown = json.encodeToString(MessageMarkdown(content = "# title"))
+        assertTrue(rawMarkdown.contains("\"content\":\"# title\""))
+        assertTrue(!rawMarkdown.contains("\"params\""))
+
+        val templatedMarkdown = json.encodeToString(
+            MessageMarkdown(
+                customTemplateId = "template-1",
+                params = listOf(MessageMarkdownParam(key = "title", values = listOf("Hello")))
+            )
+        )
+        assertTrue(templatedMarkdown.contains("\"custom_template_id\":\"template-1\""))
+        assertTrue(templatedMarkdown.contains("\"params\":[{"))
     }
 }

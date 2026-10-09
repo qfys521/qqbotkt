@@ -3,6 +3,10 @@ package cn.qfys521.qqbot.event
 import cn.qfys521.qqbot.dsl.SendMessageRequestBuilder
 import cn.qfys521.qqbot.dsl.message
 import cn.qfys521.qqbot.http.QQBotApi
+import cn.qfys521.qqbot.model.api.GuildMemberWithGuildId
+import cn.qfys521.qqbot.model.api.MessageDelete
+import cn.qfys521.qqbot.model.api.MessageAudited
+import cn.qfys521.qqbot.model.api.MessageReaction
 import cn.qfys521.qqbot.model.guild.Channel
 import cn.qfys521.qqbot.model.guild.Guild
 import cn.qfys521.qqbot.model.interaction.Interaction
@@ -13,6 +17,7 @@ import cn.qfys521.qqbot.model.message.MessageResult
 import cn.qfys521.qqbot.model.message.SendMessageRequest
 import cn.qfys521.qqbot.model.gateway.ReadyData
 import kotlinx.serialization.json.JsonElement
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * QQ 机器人 SDK 分发事件的顶层封闭根基类。
@@ -329,13 +334,21 @@ class InteractionCreateEvent(
     override val rawJson: String? = null
 ) : BotEvent() {
 
+    private val responseStarted = AtomicBoolean(false)
+
     /**
-     * 对该次具体的平台界面按压行为实施合规应答（在特定阈值毫秒中务必回覆防止按钮出现客户端报错样式）。
+     * 应答需要确认的消息按钮或快捷菜单交互。仅 interaction type 11 和 12 可应答，且同一事件只能应答一次。
      *
      * @param code 状态提示返回状态：成功一般设置默认为 `0`。
      */
     suspend fun respond(code: Int = 0) {
+        require(interaction.type == 11 || interaction.type == 12) {
+            "Only interaction types 11 and 12 require a response"
+        }
         if (interaction.id.isNotBlank()) {
+            check(responseStarted.compareAndSet(false, true)) {
+                "This interaction has already been responded to"
+            }
             api.putInteractionResponse(interaction.id, InteractionResponseRequest(code = code))
         }
     }
@@ -410,6 +423,378 @@ class ChannelUpdateEvent(
  */
 class ChannelDeleteEvent(
     val channel: Channel,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+// ==================== 群成员、好友与消息接收权限事件 ====================
+
+/** 用户申请加入机器人所在群聊时触发的 `GROUP_JOIN_REQUEST` 事件。 */
+class GroupJoinRequestEvent(
+    val groupOpenId: String,
+    val joinRequestId: String,
+    val memberOpenId: String,
+    val riskTips: String? = null,
+    val unionOpenId: String? = null,
+    val username: String? = null,
+    val applyAt: String? = null,
+    val applySource: String? = null,
+    val invitedBy: String? = null,
+    val bot: Boolean? = null,
+    val verifyInfo: JsonElement? = null,
+    val autoApproved: JsonElement? = null,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 新成员加入群聊时触发的 `GROUP_MEMBER_ADD` 事件。 */
+class GroupMemberAddEvent(
+    val groupOpenId: String,
+    val memberOpenId: String,
+    val userOpenId: String? = null,
+    /** 事件体中的 Unix 秒级时间戳。 */
+    val occurredAt: Long? = null,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 群成员退出或被移出群聊时触发的 `GROUP_MEMBER_REMOVE` 事件。 */
+class GroupMemberRemoveEvent(
+    val groupOpenId: String,
+    val memberOpenId: String,
+    val userOpenId: String? = null,
+    /** 事件体中的 Unix 秒级时间戳。 */
+    val occurredAt: Long? = null,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 用户添加机器人好友时触发的 `FRIEND_ADD` 事件。 */
+class FriendAddEvent(
+    val openId: String,
+    /** 事件体中的 Unix 秒级时间戳。 */
+    val occurredAt: Long? = null,
+    val scene: Int? = null,
+    val sceneParam: String? = null,
+    val author: JsonElement? = null,
+    val shortCode: String? = null,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 用户删除机器人好友时触发的 `FRIEND_DEL` 事件。 */
+class FriendDelEvent(
+    val openId: String,
+    /** 事件体中的 Unix 秒级时间戳。 */
+    val occurredAt: Long? = null,
+    val author: JsonElement? = null,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 群管理员开启群聊消息接收时触发的 `GROUP_MSG_RECEIVE` 事件。 */
+class GroupMsgReceiveEvent(
+    val groupOpenId: String,
+    val opMemberOpenId: String,
+    /** 事件体中的 Unix 秒级时间戳。 */
+    val occurredAt: Long? = null,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 群管理员关闭群聊消息接收时触发的 `GROUP_MSG_REJECT` 事件。 */
+class GroupMsgRejectEvent(
+    val groupOpenId: String,
+    val opMemberOpenId: String,
+    /** 事件体中的 Unix 秒级时间戳。 */
+    val occurredAt: Long? = null,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 用户开启单聊主动消息接收时触发的 `C2C_MSG_RECEIVE` 事件。 */
+class C2CMsgReceiveEvent(
+    val openId: String,
+    /** 事件体中的 Unix 秒级时间戳。 */
+    val occurredAt: Long? = null,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 用户关闭单聊主动消息接收时触发的 `C2C_MSG_REJECT` 事件。 */
+class C2CMsgRejectEvent(
+    val openId: String,
+    /** 事件体中的 Unix 秒级时间戳。 */
+    val occurredAt: Long? = null,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 频道消息被删除或撤回时触发的 `MESSAGE_DELETE` 事件。 */
+class MessageDeleteEvent(
+    val deleted: MessageDelete,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 公域频道消息被删除或撤回时触发的 `PUBLIC_MESSAGE_DELETE` 事件。 */
+class PublicMessageDeleteEvent(
+    val deleted: MessageDelete,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 频道私信消息被删除或撤回时触发的 `DIRECT_MESSAGE_DELETE` 事件。 */
+class DirectMessageDeleteEvent(
+    val deleted: MessageDelete,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+// ==================== 频道成员、消息反应与审核事件 ====================
+
+/** 新成员加入频道时触发的 `GUILD_MEMBER_ADD` 事件。 */
+class GuildMemberAddEvent(
+    val member: GuildMemberWithGuildId,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 频道成员资料或身份组变化时触发的 `GUILD_MEMBER_UPDATE` 事件。 */
+class GuildMemberUpdateEvent(
+    val member: GuildMemberWithGuildId,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 用户离开频道时触发的 `GUILD_MEMBER_REMOVE` 事件。 */
+class GuildMemberRemoveEvent(
+    val member: GuildMemberWithGuildId,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 用户为消息添加表情时触发的 `MESSAGE_REACTION_ADD` 事件。 */
+class MessageReactionAddEvent(
+    val reaction: MessageReaction,
+    val payload: JsonElement? = null,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 用户移除消息表情时触发的 `MESSAGE_REACTION_REMOVE` 事件。 */
+class MessageReactionRemoveEvent(
+    val reaction: MessageReaction,
+    val payload: JsonElement? = null,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 主动发送的消息审核通过时触发的 `MESSAGE_AUDIT_PASS` 事件。 */
+class MessageAuditPassEvent(
+    val audited: MessageAudited,
+    val payload: JsonElement? = null,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 主动发送的消息审核未通过时触发的 `MESSAGE_AUDIT_REJECT` 事件。 */
+class MessageAuditRejectEvent(
+    val audited: MessageAudited,
+    val payload: JsonElement? = null,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+// ==================== 论坛事件 ====================
+
+/** 用户创建论坛主题时触发的 `FORUM_THREAD_CREATE` 事件。 */
+class ForumThreadCreateEvent(
+    val guildId: String?,
+    val channelId: String?,
+    val authorId: String?,
+    val threadInfo: JsonElement?,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 用户更新论坛主题时触发的 `FORUM_THREAD_UPDATE` 事件。 */
+class ForumThreadUpdateEvent(
+    val guildId: String?,
+    val channelId: String?,
+    val authorId: String?,
+    val threadInfo: JsonElement?,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 用户删除论坛主题时触发的 `FORUM_THREAD_DELETE` 事件。 */
+class ForumThreadDeleteEvent(
+    val guildId: String?,
+    val channelId: String?,
+    val authorId: String?,
+    val threadInfo: JsonElement?,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 用户创建论坛帖子时触发的 `FORUM_POST_CREATE` 事件。 */
+class ForumPostCreateEvent(
+    val guildId: String?,
+    val channelId: String?,
+    val authorId: String?,
+    val postInfo: JsonElement?,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 用户删除论坛帖子时触发的 `FORUM_POST_DELETE` 事件。 */
+class ForumPostDeleteEvent(
+    val guildId: String?,
+    val channelId: String?,
+    val authorId: String?,
+    val postInfo: JsonElement?,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 用户回复论坛帖子时触发的 `FORUM_REPLY_CREATE` 事件。 */
+class ForumReplyCreateEvent(
+    val guildId: String?,
+    val channelId: String?,
+    val authorId: String?,
+    val replyInfo: JsonElement?,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 用户删除论坛回复时触发的 `FORUM_REPLY_DELETE` 事件。 */
+class ForumReplyDeleteEvent(
+    val guildId: String?,
+    val channelId: String?,
+    val authorId: String?,
+    val replyInfo: JsonElement?,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 论坛主题、帖子或回复审核完成时触发的 `FORUM_PUBLISH_AUDIT_RESULT` 事件。 */
+class ForumPublishAuditResultEvent(
+    val guildId: String?,
+    val channelId: String?,
+    val authorId: String?,
+    val type: Int?,
+    val result: Int?,
+    val errMsg: String? = null,
+    val threadId: String? = null,
+    val postId: String? = null,
+    val replyId: String? = null,
+    val payload: JsonElement? = null,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+// ==================== 群机器人与音视频成员事件 ====================
+
+/** 机器人被添加到群聊时触发的 `GROUP_ADD_ROBOT` 事件。 */
+class GroupAddRobotEvent(
+    val groupOpenId: String,
+    val opMemberOpenId: String,
+    val occurredAt: Long? = null,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 机器人被移出群聊时触发的 `GROUP_DEL_ROBOT` 事件。 */
+class GroupDelRobotEvent(
+    val groupOpenId: String,
+    val opMemberOpenId: String,
+    val occurredAt: Long? = null,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 用户进入音视频或直播子频道时触发的 `AUDIO_OR_LIVE_CHANNEL_MEMBER_ENTER` 事件。 */
+class AudioOrLiveChannelMemberEnterEvent(
+    val guildId: String?,
+    val channelId: String?,
+    val channelType: Int?,
+    val userId: String?,
+    val payload: JsonElement? = null,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 用户离开音视频或直播子频道时触发的 `AUDIO_OR_LIVE_CHANNEL_MEMBER_EXIT` 事件。 */
+class AudioOrLiveChannelMemberExitEvent(
+    val guildId: String?,
+    val channelId: String?,
+    val channelType: Int?,
+    val userId: String?,
+    val payload: JsonElement? = null,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 音频开始播放时触发的 `AUDIO_START` 事件，原始载荷保存在 [payload]。 */
+class AudioStartEvent(
+    val payload: JsonElement?,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 音频播放结束时触发的 `AUDIO_FINISH` 事件，原始载荷保存在 [payload]。 */
+class AudioFinishEvent(
+    val payload: JsonElement?,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 机器人上麦时触发的 `AUDIO_ON_MIC` 事件，原始载荷保存在 [payload]。 */
+class AudioOnMicEvent(
+    val payload: JsonElement?,
+    override val eventId: String? = null,
+    override val timestamp: String? = null,
+    override val rawJson: String? = null
+) : BotEvent()
+
+/** 机器人下麦时触发的 `AUDIO_OFF_MIC` 事件，原始载荷保存在 [payload]。 */
+class AudioOffMicEvent(
+    val payload: JsonElement?,
     override val eventId: String? = null,
     override val timestamp: String? = null,
     override val rawJson: String? = null

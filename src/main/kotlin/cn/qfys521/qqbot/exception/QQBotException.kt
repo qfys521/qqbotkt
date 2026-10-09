@@ -1,5 +1,7 @@
 package cn.qfys521.qqbot.exception
 
+import kotlinx.serialization.json.JsonElement
+
 /**
  * QQ 机器人 Kotlin SDK 异常根基类。
  * 所有由本 SDK 抛出的异常类均派生自此。
@@ -16,18 +18,21 @@ open class QQBotException(
  * 平台 OpenAPI 业务交互异常。
  * 当请求成功到达平台服务，但由于鉴权不足、参数错误、频率超载等业务逻辑引发平台接口返回非成功回包时抛出。
  *
- * @property errCode QQ 开放平台下发的具体 OpenAPI 错误码（比如 `11243` 代表 Token 失效）。
+ * @property errCode QQ 开放平台下发的具体 OpenAPI 错误码（比如 `11243` 代表 Token 校验未通过）。
  * @property errMessage 接口返回的文字报错描述解释。
  * @property traceId 服务端 Header 或报文中随同响应生成的链路日志追踪识别凭证 (`X-Tps-trace-ID`)，协助定位工单。
  * @property httpStatusCode 底层通讯关联的 HTTP Status 响应状态代码（例 `401`、`429`、`500` 等）。
  */
-class QQBotApiException(
+open class QQBotApiException(
     val errCode: Int,
     val errMessage: String,
     val traceId: String? = null,
-    val httpStatusCode: Int = 0
+    val httpStatusCode: Int = 0,
+    val errorData: JsonElement? = null,
+    val isAsyncOperation: Boolean = false
 ) : QQBotException(
-    message = "QQ Bot API 业务错误 [httpStatus=$httpStatusCode, errCode=$errCode]: $errMessage" +
+    message = (if (isAsyncOperation) "QQ Bot API 异步操作已受理" else "QQ Bot API 业务错误") +
+            " [httpStatus=$httpStatusCode, errCode=$errCode]: $errMessage" +
             if (traceId != null) " (traceId=$traceId)" else ""
 )
 

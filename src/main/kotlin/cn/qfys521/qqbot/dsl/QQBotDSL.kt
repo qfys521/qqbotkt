@@ -119,6 +119,155 @@ class QQBotBuilderScope {
         eventListeners.add { it.onC2CMessage(listener) }
     }
 
+    /** 绑定用户申请加入群聊 (`GROUP_JOIN_REQUEST`) 事件。 */
+    fun onGroupJoinRequest(listener: suspend (GroupJoinRequestEvent) -> Unit) {
+        eventListeners.add { it.onGroupJoinRequest(listener) }
+    }
+
+    /** 绑定群成员加入 (`GROUP_MEMBER_ADD`) 事件。 */
+    fun onGroupMemberAdd(listener: suspend (GroupMemberAddEvent) -> Unit) {
+        eventListeners.add { it.onGroupMemberAdd(listener) }
+    }
+
+    /** 绑定群成员退出或被移出 (`GROUP_MEMBER_REMOVE`) 事件。 */
+    fun onGroupMemberRemove(listener: suspend (GroupMemberRemoveEvent) -> Unit) {
+        eventListeners.add { it.onGroupMemberRemove(listener) }
+    }
+
+    /** 绑定用户添加好友 (`FRIEND_ADD`) 事件。 */
+    fun onFriendAdd(listener: suspend (FriendAddEvent) -> Unit) {
+        eventListeners.add { it.onFriendAdd(listener) }
+    }
+
+    /** 绑定用户删除好友 (`FRIEND_DEL`) 事件。 */
+    fun onFriendDel(listener: suspend (FriendDelEvent) -> Unit) {
+        eventListeners.add { it.onFriendDel(listener) }
+    }
+
+    /** 绑定开启群聊消息接收 (`GROUP_MSG_RECEIVE`) 事件。 */
+    fun onGroupMsgReceive(listener: suspend (GroupMsgReceiveEvent) -> Unit) {
+        eventListeners.add { it.onGroupMsgReceive(listener) }
+    }
+
+    /** 绑定关闭群聊消息接收 (`GROUP_MSG_REJECT`) 事件。 */
+    fun onGroupMsgReject(listener: suspend (GroupMsgRejectEvent) -> Unit) {
+        eventListeners.add { it.onGroupMsgReject(listener) }
+    }
+
+    /** 绑定开启单聊主动消息接收 (`C2C_MSG_RECEIVE`) 事件。 */
+    fun onC2CMsgReceive(listener: suspend (C2CMsgReceiveEvent) -> Unit) {
+        eventListeners.add { it.onC2CMsgReceive(listener) }
+    }
+
+    /** 绑定关闭单聊主动消息接收 (`C2C_MSG_REJECT`) 事件。 */
+    fun onC2CMsgReject(listener: suspend (C2CMsgRejectEvent) -> Unit) {
+        eventListeners.add { it.onC2CMsgReject(listener) }
+    }
+
+    fun onMessageDelete(listener: suspend (MessageDeleteEvent) -> Unit) {
+        eventListeners.add { it.onMessageDelete(listener) }
+    }
+
+    fun onPublicMessageDelete(listener: suspend (PublicMessageDeleteEvent) -> Unit) {
+        eventListeners.add { it.onPublicMessageDelete(listener) }
+    }
+
+    fun onDirectMessageDelete(listener: suspend (DirectMessageDeleteEvent) -> Unit) {
+        eventListeners.add { it.onDirectMessageDelete(listener) }
+    }
+
+    fun onGuildMemberAdd(listener: suspend (GuildMemberAddEvent) -> Unit) {
+        eventListeners.add { it.onGuildMemberAdd(listener) }
+    }
+
+    fun onGuildMemberUpdate(listener: suspend (GuildMemberUpdateEvent) -> Unit) {
+        eventListeners.add { it.onGuildMemberUpdate(listener) }
+    }
+
+    fun onGuildMemberRemove(listener: suspend (GuildMemberRemoveEvent) -> Unit) {
+        eventListeners.add { it.onGuildMemberRemove(listener) }
+    }
+
+    fun onMessageReactionAdd(listener: suspend (MessageReactionAddEvent) -> Unit) {
+        eventListeners.add { it.onMessageReactionAdd(listener) }
+    }
+
+    fun onMessageReactionRemove(listener: suspend (MessageReactionRemoveEvent) -> Unit) {
+        eventListeners.add { it.onMessageReactionRemove(listener) }
+    }
+
+    fun onMessageAuditPass(listener: suspend (MessageAuditPassEvent) -> Unit) {
+        eventListeners.add { it.onMessageAuditPass(listener) }
+    }
+
+    fun onMessageAuditReject(listener: suspend (MessageAuditRejectEvent) -> Unit) {
+        eventListeners.add { it.onMessageAuditReject(listener) }
+    }
+
+    fun onForumThreadCreate(listener: suspend (ForumThreadCreateEvent) -> Unit) {
+        eventListeners.add { it.onForumThreadCreate(listener) }
+    }
+
+    fun onForumThreadUpdate(listener: suspend (ForumThreadUpdateEvent) -> Unit) {
+        eventListeners.add { it.onForumThreadUpdate(listener) }
+    }
+
+    fun onForumThreadDelete(listener: suspend (ForumThreadDeleteEvent) -> Unit) {
+        eventListeners.add { it.onForumThreadDelete(listener) }
+    }
+
+    fun onForumPostCreate(listener: suspend (ForumPostCreateEvent) -> Unit) {
+        eventListeners.add { it.onForumPostCreate(listener) }
+    }
+
+    fun onForumPostDelete(listener: suspend (ForumPostDeleteEvent) -> Unit) {
+        eventListeners.add { it.onForumPostDelete(listener) }
+    }
+
+    fun onForumReplyCreate(listener: suspend (ForumReplyCreateEvent) -> Unit) {
+        eventListeners.add { it.onForumReplyCreate(listener) }
+    }
+
+    fun onForumReplyDelete(listener: suspend (ForumReplyDeleteEvent) -> Unit) {
+        eventListeners.add { it.onForumReplyDelete(listener) }
+    }
+
+    fun onForumPublishAuditResult(listener: suspend (ForumPublishAuditResultEvent) -> Unit) {
+        eventListeners.add { it.onForumPublishAuditResult(listener) }
+    }
+
+    fun onGroupAddRobot(listener: suspend (GroupAddRobotEvent) -> Unit) {
+        eventListeners.add { it.onGroupAddRobot(listener) }
+    }
+
+    fun onGroupDelRobot(listener: suspend (GroupDelRobotEvent) -> Unit) {
+        eventListeners.add { it.onGroupDelRobot(listener) }
+    }
+
+    fun onAudioOrLiveChannelMemberEnter(listener: suspend (AudioOrLiveChannelMemberEnterEvent) -> Unit) {
+        eventListeners.add { it.onAudioOrLiveChannelMemberEnter(listener) }
+    }
+
+    fun onAudioOrLiveChannelMemberExit(listener: suspend (AudioOrLiveChannelMemberExitEvent) -> Unit) {
+        eventListeners.add { it.onAudioOrLiveChannelMemberExit(listener) }
+    }
+
+    fun onAudioStart(listener: suspend (AudioStartEvent) -> Unit) {
+        eventListeners.add { it.onAudioStart(listener) }
+    }
+
+    fun onAudioFinish(listener: suspend (AudioFinishEvent) -> Unit) {
+        eventListeners.add { it.onAudioFinish(listener) }
+    }
+
+    fun onAudioOnMic(listener: suspend (AudioOnMicEvent) -> Unit) {
+        eventListeners.add { it.onAudioOnMic(listener) }
+    }
+
+    fun onAudioOffMic(listener: suspend (AudioOffMicEvent) -> Unit) {
+        eventListeners.add { it.onAudioOffMic(listener) }
+    }
+
     /**
      * 绑定公域频道中被用户 @ 时 (`AT_MESSAGE_CREATE`) 的侦听回调。
      *

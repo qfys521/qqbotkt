@@ -9,6 +9,7 @@ import cn.qfys521.qqbot.model.interaction.InteractionResponseRequest
 import cn.qfys521.qqbot.model.message.GroupBotState
 import cn.qfys521.qqbot.model.message.MessageResult
 import cn.qfys521.qqbot.model.message.SendMessageRequest
+import cn.qfys521.qqbot.model.message.StreamMessageRequest
 import cn.qfys521.qqbot.model.message.UploadMediaRequest
 import cn.qfys521.qqbot.model.message.UploadMediaResponse
 import cn.qfys521.qqbot.model.user.GuildItem
@@ -41,7 +42,11 @@ interface QQBotApi {
      *
      * @return 频道简略描述条目合集。
      */
-    suspend fun getMyGuilds(): List<GuildItem>
+    suspend fun getMyGuilds(
+        before: String? = null,
+        after: String? = null,
+        limit: Int? = null
+    ): List<GuildItem>
 
     // ==================== 单聊消息 (C2C) ====================
 
@@ -99,7 +104,11 @@ interface QQBotApi {
      * @param request 准备投递流式的特定消息体。
      * @return 消息分发任务应答。
      */
-    suspend fun sendC2CStreamMessage(userOpenId: String, request: SendMessageRequest): MessageResult
+    suspend fun sendC2CStreamMessage(userOpenId: String, request: StreamMessageRequest): MessageResult
+
+    @Deprecated("Use StreamMessageRequest to set stream state and chunk index explicitly")
+    suspend fun sendC2CStreamMessage(userOpenId: String, request: SendMessageRequest): MessageResult =
+        sendC2CStreamMessage(userOpenId, StreamMessageRequest.from(request))
 
     /**
      * 在单聊场景中上传媒体文件（根据 URL 下载或预签转存）并换回发消息所需的 [UploadMediaResponse]。
@@ -287,6 +296,92 @@ interface QQBotApi {
      * @param channelId 欲移除处理的目标频道标识。
      */
     suspend fun deleteChannel(channelId: String)
+
+    // ==================== 频道成员、权限及身份组 ====================
+
+    suspend fun getGuildMembers(guildId: String, after: String? = null, limit: Int? = null): List<GuildMember>
+    suspend fun getGuildMember(guildId: String, userId: String): GuildMember
+    suspend fun removeGuildMember(
+        guildId: String,
+        userId: String,
+        request: RemoveGuildMemberRequest = RemoveGuildMemberRequest()
+    )
+    suspend fun getGuildRoleMembers(
+        guildId: String,
+        roleId: String,
+        startIndex: String? = null,
+        limit: Int? = null
+    ): GuildRoleMembersResponse
+
+    suspend fun getGuildRoles(guildId: String): GuildRolesResponse
+    suspend fun createGuildRole(guildId: String, request: CreateGuildRoleRequest): CreateGuildRoleResponse
+    suspend fun updateGuildRole(guildId: String, roleId: String, request: UpdateGuildRoleRequest): GuildRoleResponse
+    suspend fun deleteGuildRole(guildId: String, roleId: String)
+    suspend fun addGuildMemberRole(
+        guildId: String,
+        userId: String,
+        roleId: String,
+        request: GuildRoleMemberRequest = GuildRoleMemberRequest()
+    )
+    suspend fun removeGuildMemberRole(guildId: String, userId: String, roleId: String)
+
+    suspend fun setGuildMute(guildId: String, request: GuildMuteRequest)
+    suspend fun muteGuildMembers(guildId: String, request: GuildMembersMuteRequest): GuildMembersMuteResponse
+    suspend fun muteGuildMember(guildId: String, userId: String, request: GuildMuteRequest)
+    suspend fun getGuildMessageSetting(guildId: String): MessageSetting
+    suspend fun getChannelMemberPermissions(channelId: String, userId: String): ChannelPermission
+    suspend fun getChannelRolePermissions(channelId: String, roleId: String): ChannelPermission
+    suspend fun updateChannelMemberPermissions(channelId: String, userId: String, request: UpdateChannelPermissionRequest)
+    suspend fun updateChannelRolePermissions(channelId: String, roleId: String, request: UpdateChannelPermissionRequest)
+
+    // ==================== 频道消息、私信与表情 ====================
+
+    suspend fun sendChannelMessage(channelId: String, request: ChannelMessageSendRequest): ChannelMessage
+    suspend fun sendChannelMessage(
+        channelId: String,
+        request: ChannelMessageSendRequest,
+        fileImage: ChannelMessageImageFile
+    ): ChannelMessage
+    suspend fun deleteChannelMessage(channelId: String, messageId: String, hideTip: Boolean = false)
+    suspend fun createDirectMessage(request: CreateDirectMessageRequest): DirectMessageSession
+    suspend fun sendDirectMessage(dmGuildId: String, request: ChannelMessageSendRequest): ChannelMessage
+    suspend fun deleteDirectMessage(dmGuildId: String, messageId: String, hideTip: Boolean = false)
+    suspend fun putMessageReaction(channelId: String, messageId: String, type: Int, emojiId: String)
+    suspend fun deleteMessageReaction(channelId: String, messageId: String, type: Int, emojiId: String)
+    suspend fun getMessageReactionUsers(
+        channelId: String,
+        messageId: String,
+        type: Int,
+        emojiId: String,
+        cookie: String? = null,
+        limit: Int? = null
+    ): MessageReactionUsersResponse
+
+    // ==================== 精华消息、日程、公告与论坛 ====================
+
+    suspend fun getChannelPins(channelId: String): PinsMessage
+    suspend fun addChannelPin(channelId: String, messageId: String): PinsMessage
+    suspend fun removeChannelPin(channelId: String, messageId: String)
+    suspend fun getChannelSchedules(channelId: String, since: Long? = null): List<Schedule>
+    suspend fun getChannelSchedule(channelId: String, scheduleId: String): Schedule
+    suspend fun createChannelSchedule(channelId: String, request: ScheduleRequest): Schedule
+    suspend fun updateChannelSchedule(channelId: String, scheduleId: String, request: ScheduleRequest): Schedule
+    suspend fun deleteChannelSchedule(channelId: String, scheduleId: String)
+    suspend fun createGuildAnnouncement(guildId: String, request: CreateAnnouncesRequest): Announces
+    suspend fun deleteGuildAnnouncement(guildId: String, messageId: String)
+    suspend fun getForumThreads(channelId: String): ForumThreadsResponse
+    suspend fun getForumThread(channelId: String, threadId: String): ForumThreadResponse
+    suspend fun createForumThread(channelId: String, request: CreateForumThreadRequest): CreateForumThreadResponse
+    suspend fun deleteForumThread(channelId: String, threadId: String)
+
+    // ==================== 语音频道与接口权限 ====================
+
+    suspend fun controlChannelAudio(channelId: String, request: AudioControlRequest)
+    suspend fun putChannelMic(channelId: String)
+    suspend fun deleteChannelMic(channelId: String)
+    suspend fun getChannelOnlineNumbers(channelId: String): OnlineNumbersResponse
+    suspend fun getGuildApiPermissions(guildId: String): ApiPermissionsResponse
+    suspend fun requestGuildApiPermission(guildId: String, request: ApiPermissionDemandRequest): ApiPermissionDemand
 
     // ==================== 互动事件应答 (Interaction) ====================
 

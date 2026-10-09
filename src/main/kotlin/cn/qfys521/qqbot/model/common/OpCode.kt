@@ -2,21 +2,29 @@ package cn.qfys521.qqbot.model.common
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 /**
  * QQ OpenAPI 标准接口请求报错或者鉴权拒绝时服务器返回的数据包结构。
  *
- * @property errCode 平台下发的错误编号（例如 `11243` 代表凭据无效或过期）。
+ * @property errCode 平台下发的错误编号（例如 `11243` 代表凭据校验未通过）。
  * @property message 具体的错误说明文本。
  * @property traceId 平台服务的 TraceID，用于查验工单排障。
  */
 @Serializable
 data class ApiErrorResponse(
-    @SerialName("errcode") val errCode: Int = 0,
+    @SerialName("err_code") val errCode: Int = 0,
+    @SerialName("errcode") val legacyErrCode: Int = 0,
     val message: String = "",
     @SerialName("trace_id") val traceId: String? = null,
-    @SerialName("code") val code: Int = 0
-)
+    @SerialName("code") val code: Int = 0,
+    val data: JsonElement? = null
+) {
+    val effectiveCode: Int
+        get() = errCode.takeIf { it != 0 }
+            ?: legacyErrCode.takeIf { it != 0 }
+            ?: code
+}
 
 /**
  * QQ 机器人官方 WebSocket 网关操作码常量定义体 (`OpCode`)。
